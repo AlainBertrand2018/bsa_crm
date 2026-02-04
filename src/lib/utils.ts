@@ -15,9 +15,17 @@ export function formatDate(dateString: string | Date, dateFormat: string = 'PP')
   }
 }
 
+const formatterCache = new Map<string, Intl.NumberFormat>();
+
 export function formatCurrency(amount: number | undefined | null, currency: string = 'MUR'): string {
   const safeAmount = (amount === undefined || amount === null || isNaN(amount)) ? 0 : amount;
-  return new Intl.NumberFormat('en-MU', { style: 'currency', currency: currency || 'MUR' }).format(safeAmount);
+  const cacheKey = currency || 'MUR';
+
+  if (!formatterCache.has(cacheKey)) {
+    formatterCache.set(cacheKey, new Intl.NumberFormat('en-MU', { style: 'currency', currency: cacheKey }));
+  }
+
+  return formatterCache.get(cacheKey)!.format(safeAmount);
 }
 
 // Placeholder for ID generation. In a real app, this would be more robust and likely DB-driven.

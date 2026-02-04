@@ -10,7 +10,7 @@ interface StatCardProps {
   className?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, description, className }: StatCardProps) {
+export const StatCard = React.memo(({ title, value, icon: Icon, description, className }: StatCardProps) => {
   return (
     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow duration-300", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -23,7 +23,9 @@ export function StatCard({ title, value, icon: Icon, description, className }: S
       </CardContent>
     </Card>
   );
-}
+});
+
+StatCard.displayName = "StatCard";
 
 // Helper for cn if not globally available in this context (it should be via utils)
 // const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');

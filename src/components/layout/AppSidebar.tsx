@@ -1,5 +1,6 @@
 
 "use client";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -35,7 +36,7 @@ const bottomNavItems: NavItemType[] = [
 ];
 
 
-export function AppSidebar() {
+export const AppSidebar = React.memo(() => {
   const pathname = usePathname();
   const { currentUser } = useAuth();
 
@@ -102,4 +103,6 @@ export function AppSidebar() {
       )}
     </Sidebar>
   );
-}
+});
+
+AppSidebar.displayName = "AppSidebar";

@@ -32,10 +32,10 @@ export default function DashboardPage() {
 
       try {
         const [quotationsData, invoicesData, clientsData, productsData] = await Promise.all([
-          quotationsService.getAll(currentUser.id, currentUser.role),
-          invoicesService.getAll(currentUser.id, currentUser.role),
-          clientsService.getAll(),
-          productsService.getAll(currentUser.id),
+          quotationsService.getAll(currentUser.id, currentUser.role, currentUser.companyId),
+          invoicesService.getAll(currentUser.id, currentUser.role, currentUser.companyId),
+          clientsService.getAll(currentUser.id, currentUser.role, currentUser.companyId),
+          productsService.getAll(currentUser.id, currentUser.role, currentUser.companyId),
         ]);
         setQuotations(quotationsData as Quotation[]);
         setInvoices(invoicesData as Invoice[]);
@@ -189,7 +189,7 @@ export default function DashboardPage() {
 }
 
 
-function RecentDataTable({ type, data }: { type: 'quotation' | 'invoice', data: (Quotation | Invoice)[] }) {
+const RecentDataTable = React.memo(({ type, data }: { type: 'quotation' | 'invoice', data: (Quotation | Invoice)[] }) => {
   if (data.length === 0) {
     return <p className="text-muted-foreground text-center py-4">No recent {type}s.</p>;
   }
@@ -208,7 +208,7 @@ function RecentDataTable({ type, data }: { type: 'quotation' | 'invoice', data: 
           <TableRow key={item.id}>
             <TableCell className="font-medium">
               <Link href={`/${type}s/${item.id}`} className="hover:underline text-primary">
-                {item.id.split('-').slice(0, 2).join('-')}-...-${item.id.slice(-4)}
+                {item.id.length > 20 ? `${item.id.substring(0, 8)}...${item.id.slice(-4)}` : item.id}
               </Link>
             </TableCell>
             <TableCell>{item.clientName}</TableCell>
@@ -229,4 +229,6 @@ function RecentDataTable({ type, data }: { type: 'quotation' | 'invoice', data: 
       </TableBody>
     </Table>
   );
-}
+});
+
+RecentDataTable.displayName = 'RecentDataTable';

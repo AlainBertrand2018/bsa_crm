@@ -142,8 +142,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
 
+    // Throttle resetIdleTimer to avoid excessive calls during mousemove
+    let lastReset = 0;
+    const throttledReset = () => {
+      const now = Date.now();
+      if (now - lastReset > 1000) { // Only reset once per second
+        resetIdleTimer();
+        lastReset = now;
+      }
+    };
+
     activityEvents.forEach(event => {
-      document.addEventListener(event, resetIdleTimer, true);
+      document.addEventListener(event, throttledReset, true);
     });
 
     resetIdleTimer();
@@ -151,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       if (idleTimer) clearTimeout(idleTimer);
       activityEvents.forEach(event => {
-        document.removeEventListener(event, resetIdleTimer, true);
+        document.removeEventListener(event, throttledReset, true);
       });
     };
   }, [currentUser]);
@@ -224,13 +234,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = {
+  const value = React.useMemo(() => ({
     currentUser,
     isLoading,
     login,
     logout,
     refreshUser,
-  };
+  }), [currentUser, isLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

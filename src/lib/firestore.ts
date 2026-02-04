@@ -3,15 +3,11 @@ import * as firestore from "firebase/firestore";
 import { db } from "./firebase";
 import { User, Quotation, Invoice, ClientDetails, BusinessDetails, OnboardingProduct } from "./types";
 
-// Helper to remove undefined values from objects (Firestore doesn't allow them)
 const cleanData = (data: any) => {
-    const cleaned = { ...data };
-    Object.keys(cleaned).forEach(key => {
-        if (cleaned[key] === undefined) {
-            delete cleaned[key];
-        }
-    });
-    return cleaned;
+    if (!data || typeof data !== 'object') return data;
+    return Object.fromEntries(
+        Object.entries(data).filter(([_, v]) => v !== undefined)
+    );
 };
 
 // Generic CRUD helpers
@@ -32,15 +28,18 @@ export const getDocument = async (collectionName: string, id: string) => {
     return null;
 };
 
-export const getDocuments = async (collectionName: string, constraints: firestore.QueryConstraint[] = []) => {
+export const getDocuments = async (collectionName: string, constraints: firestore.QueryConstraint[] = [], limitCount?: number) => {
     try {
-        const q = firestore.query(firestore.collection(db, collectionName), ...constraints);
+        const queryConstraints = [...constraints];
+        if (limitCount) {
+            queryConstraints.push(firestore.limit(limitCount));
+        }
+        const q = firestore.query(firestore.collection(db, collectionName), ...queryConstraints);
         const querySnapshot = await firestore.getDocs(q);
         const data = querySnapshot.docs.map(doc => ({
             ...doc.data(),
-            id: doc.id  // Ensure Firestore document ID is always used, even if data has its own id field
+            id: doc.id
         }));
-        console.log(`[Firestore] Fetched ${data.length} documents from ${collectionName}`);
         return data;
     } catch (error) {
         console.error(`[Firestore] Error fetching from ${collectionName}:`, error);

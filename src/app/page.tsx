@@ -1,11 +1,11 @@
 "use client";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Rocket, FileText, Bot, LogIn, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { APP_NAME } from "@/lib/constants";
-import { useState } from "react";
 import { LoginModal } from "@/components/auth/LoginModal";
 
 export default function HomePage() {
@@ -97,7 +97,7 @@ interface FeatureCardProps {
   description: string;
 }
 
-function FeatureCard({ icon, title, description }: FeatureCardProps) {
+const FeatureCard = React.memo(({ icon, title, description }: FeatureCardProps) => {
   return (
     <Card className="bg-card/80 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-shadow duration-300">
       <CardHeader className="items-center">
@@ -109,4 +109,6 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
+
+FeatureCard.displayName = "FeatureCard";

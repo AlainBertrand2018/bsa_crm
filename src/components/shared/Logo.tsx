@@ -9,7 +9,7 @@ interface LogoProps {
     businessName?: string;
 }
 
-export function Logo({ className, iconOnly = false, businessName }: LogoProps) {
+export const Logo = React.memo(({ className, iconOnly = false, businessName }: LogoProps) => {
     return (
         <div className={cn("flex items-center gap-2", className)}>
             <svg
@@ -32,4 +32,6 @@ export function Logo({ className, iconOnly = false, businessName }: LogoProps) {
             )}
         </div>
     );
-}
+});
+
+Logo.displayName = "Logo";
