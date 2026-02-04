@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { VAT_RATE, QUOTATION_STATUSES } from '@/lib/constants';
-import type { DocumentItem, Quotation, Product } from '@/lib/types';
+import type { DocumentItem, Quotation, Product, ClientDetails } from '@/lib/types';
 import { formatCurrency, formatDate, generateQuotationId } from '@/lib/utils';
 import { PlusCircle, Trash2, Save, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -57,18 +57,33 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
   const { currentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [clients, setClients] = useState<ClientDetails[]>([]);
 
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchData() {
       if (!currentUser) return;
       try {
-        const productsData = await supabaseService.products.getAll(currentUser.id, currentUser.role, currentUser.companyId);
+        const [productsData, clientsData] = await Promise.all([
+          supabaseService.products.getAll(currentUser.id, currentUser.role, currentUser.companyId),
+          supabaseService.clients.getAll(currentUser.id, currentUser.role, currentUser.companyId)
+        ]);
         setProducts(productsData as Product[]);
+
+        const transformedClients = clientsData.map((c: any) => ({
+          ...c,
+          clientName: c.client_name || c.clientName,
+          clientEmail: c.client_email || c.clientEmail,
+          clientCompany: c.client_company || c.clientCompany,
+          clientPhone: c.client_phone || c.clientPhone,
+          clientAddress: c.client_address || c.clientAddress,
+          clientBRN: c.client_brn || c.clientBRN,
+        }));
+        setClients(transformedClients as ClientDetails[]);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error fetching data:", error);
       }
     }
-    fetchProducts();
+    fetchData();
   }, [currentUser]);
 
   const isOwner = !initialData || initialData.createdBy === currentUser?.id;
@@ -155,6 +170,18 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
     form.setValue(`items.${index}.total`, quantity * validUnitPrice);
   };
 
+  const handleClientNameChange = (name: string) => {
+    const selectedClient = clients.find(c => c.clientName === name);
+    if (selectedClient) {
+      form.setValue('clientId', selectedClient.id);
+      form.setValue('clientCompany', selectedClient.clientCompany || '');
+      form.setValue('clientEmail', selectedClient.clientEmail);
+      form.setValue('clientPhone', selectedClient.clientPhone || '');
+      form.setValue('clientAddress', selectedClient.clientAddress || '');
+      form.setValue('clientBRN', selectedClient.clientBRN || '');
+    }
+  };
+
 
 
   async function onSubmit(data: QuotationFormValues) {
@@ -228,9 +255,26 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Client Name*</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter client name" {...field} />
-                  </FormControl>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handleClientNameChange(value);
+                    }}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a registered client" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {clients.map(client => (
+                        <SelectItem key={client.id} value={client.clientName}>
+                          {client.clientName} {client.clientCompany ? `(${client.clientCompany})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
