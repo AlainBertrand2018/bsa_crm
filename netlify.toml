@@ -1,0 +1,10 @@
+[build]
+  command = "next build"
+  publish = ".next"
+
+# The Next.js Runtime on Netlify (formerly @netlify/plugin-nextjs)
+# is typically auto-detected and applied.
+# If you encounter issues or need specific configurations,
+# you might need to install it and add it here:
+# [[plugins]]
+#  package = "@netlify/plugin-nextjs"

@@ -1,0 +1,31 @@
+# Firebase App Hosting configuration for a Next.js app
+# This is a minimal configuration.
+# Refer to Firebase documentation for more options:
+# https://firebase.google.com/docs/app-hosting/configure-serve
+
+# Specifies the build and run settings.
+# Firebase App Hosting automatically detects Next.js and uses appropriate build commands.
+# You can customize build environment variables if needed.
+# For example, to set NODE_ENV to production (often default for builds):
+# env:
+#   - variable: NODE_ENV
+#     value: production
+#
+# If your application requires other environment variables (e.g., API keys for Genkit),
+# you should configure them as secrets in Firebase Secret Manager and reference them here:
+# env:
+#   - variable: GOOGLE_API_KEY # The variable name your app expects
+#     secret: NAME_OF_YOUR_SECRET_IN_SECRET_MANAGER # The secret you created in Firebase
+
+# Server runtime configuration
+runConfig:
+  # Minimum number of server instances. Set to 0 for cost optimization during inactivity.
+  # For a production app, you might want to set this to 1 or higher based on expected traffic.
+  minInstances: 0
+  # You can specify CPU, memory, and concurrency if needed.
+  # cpu: 1
+  # memoryMiB: 512
+  # concurrency: 80
+
+# Backend settings are typically automatically configured for Next.js by App Hosting.
+# backend: {}
