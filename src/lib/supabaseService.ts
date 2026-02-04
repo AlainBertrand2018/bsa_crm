@@ -310,7 +310,8 @@ export const supabaseService = {
                 due_date: i.dueDate,
                 sub_total: i.subTotal,
                 vat_amount: i.vatAmount,
-                grand_total: i.grandTotal
+                grand_total: i.grandTotal,
+                total_paid: i.totalPaid || 0
             }));
         },
         create: async (invoice: any) => {
@@ -343,7 +344,8 @@ export const supabaseService = {
                 due_date: i.dueDate,
                 sub_total: i.subTotal,
                 vat_amount: i.vatAmount,
-                grand_total: i.grandTotal
+                grand_total: i.grandTotal,
+                total_paid: i.totalPaid || 0
             };
         },
         delete: async (id: string) => {
@@ -355,15 +357,55 @@ export const supabaseService = {
     receipts: {
         getAll: async (userId?: string, role?: string, companyId?: string) => {
             const data = await receiptsService.getAll(userId, role, companyId);
-            return data;
+            return data.map((r: any) => ({
+                ...r,
+                user_id: r.createdBy,
+                invoice_id: r.invoiceId,
+                client_name: r.clientName,
+                client_company: r.clientCompany,
+                client_email: r.clientEmail,
+                client_phone: r.clientPhone,
+                client_address: r.clientAddress,
+                client_brn: r.clientBRN,
+                payment_method: r.paymentMethod,
+            }));
         },
         create: async (receipt: any) => {
             const firestoreReceipt = {
                 ...receipt,
+                invoiceId: receipt.invoice_id || receipt.invoiceId,
+                clientName: receipt.client_name || receipt.clientName,
+                clientCompany: receipt.client_company || receipt.clientCompany,
+                clientEmail: receipt.client_email || receipt.clientEmail,
+                clientPhone: receipt.client_phone || receipt.clientPhone,
+                clientAddress: receipt.client_address || receipt.clientAddress,
+                clientBRN: receipt.client_brn || receipt.clientBRN,
+                paymentMethod: receipt.payment_method || receipt.paymentMethod,
                 createdBy: receipt.userId || receipt.user_id || receipt.createdBy,
                 companyId: receipt.companyId || receipt.company_id
             };
             const docRef = await receiptsService.create(firestoreReceipt);
+
+            // Update the corresponding invoice
+            const invoiceId = receipt.invoice_id || receipt.invoiceId;
+            if (invoiceId) {
+                try {
+                    const invoice: any = await invoicesService.getById(invoiceId);
+                    if (invoice) {
+                        const newTotalPaid = (invoice.totalPaid || 0) + receipt.amount;
+                        const newStatus = newTotalPaid >= invoice.grandTotal ? 'Fully Paid' : 'Partly Paid';
+
+                        await invoicesService.update(invoiceId, {
+                            totalPaid: newTotalPaid,
+                            status: newStatus as any
+                        });
+                        console.log(`[SupabaseShim] Updated invoice ${invoiceId}: totalPaid=${newTotalPaid}, status=${newStatus}`);
+                    }
+                } catch (e) {
+                    console.error(`[SupabaseShim] Error updating invoice ${invoiceId} after receipt:`, e);
+                }
+            }
+
             return { id: docRef.id, ...firestoreReceipt };
         },
         getById: async (id: string) => {

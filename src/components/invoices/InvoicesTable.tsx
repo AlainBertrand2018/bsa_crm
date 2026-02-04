@@ -216,6 +216,10 @@ The Team at ${businessName}
         date: new Date().toISOString(),
         client_name: paymentInvoice.clientName,
         client_company: paymentInvoice.clientCompany,
+        client_email: paymentInvoice.clientEmail,
+        client_phone: paymentInvoice.clientPhone,
+        client_address: paymentInvoice.clientAddress,
+        client_brn: paymentInvoice.clientBRN,
         user_id: currentUser?.id,
         companyId: currentUser?.companyId,
       });

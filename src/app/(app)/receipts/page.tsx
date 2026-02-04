@@ -45,6 +45,10 @@ export default function ReceiptsPage() {
                 ...r,
                 clientName: r.client_name || r.clientName,
                 clientCompany: r.client_company || r.clientCompany,
+                clientEmail: r.client_email || r.clientEmail,
+                clientPhone: r.client_phone || r.clientPhone,
+                clientAddress: r.client_address || r.clientAddress,
+                clientBRN: r.client_brn || r.clientBRN,
                 paymentMethod: r.payment_method || r.paymentMethod,
                 createdBy: r.user_id || r.createdBy
             }));

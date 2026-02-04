@@ -278,17 +278,46 @@ export const generateReceiptPdf = (
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(70, 70, 70);
-  doc.text(String(receipt.clientName || 'N/A'), 14, yPos + 6);
-  if (receipt.clientCompany) {
-    doc.text(String(receipt.clientCompany), 14, yPos + 11);
+
+  let currentY = yPos + 6;
+  const clientName = String(receipt.clientName || receipt.client_name || 'N/A');
+  const clientCompany = String(receipt.clientCompany || receipt.client_company || '');
+  const clientEmail = String(receipt.clientEmail || receipt.client_email || '');
+  const clientPhone = String(receipt.clientPhone || receipt.client_phone || '');
+  const clientAddress = String(receipt.clientAddress || receipt.client_address || '');
+  const clientBRN = String(receipt.clientBRN || receipt.client_brn || '');
+
+  doc.text(clientName, 14, currentY);
+  currentY += 5;
+  if (clientCompany) {
+    doc.text(clientCompany, 14, currentY);
+    currentY += 5;
+  }
+  if (clientEmail) {
+    doc.text(`Email: ${clientEmail}`, 14, currentY);
+    currentY += 5;
+  }
+  if (clientPhone) {
+    doc.text(`Phone: ${clientPhone}`, 14, currentY);
+    currentY += 5;
+  }
+  if (clientAddress) {
+    const addressLines = doc.splitTextToSize(clientAddress, doc.internal.pageSize.getWidth() / 2 - 28);
+    doc.text(addressLines, 14, currentY);
+    currentY += (addressLines.length * 5);
+  }
+  if (clientBRN) {
+    doc.text(`BRN: ${clientBRN}`, 14, currentY);
+    currentY += 5;
   }
 
-  yPos += 25;
+  yPos = Math.max(yPos + 25, currentY + 5);
 
   doc.autoTable({
-    head: [['Description', 'Payment Method', 'Amount']],
+    head: [['Date', 'Description', 'Method', 'Amount']],
     body: [
       [
+        formatDate(receipt.date || new Date()),
         `Payment for Invoice ${receipt.invoiceNumber || receipt.invoice_id || 'N/A'}`,
         receipt.paymentMethod || receipt.payment_method || 'N/A',
         formatCurrency(receipt.amount, receipt.currency || 'MUR')
@@ -297,21 +326,31 @@ export const generateReceiptPdf = (
     startY: yPos,
     theme: 'grid',
     headStyles: { fillColor: [0, 102, 204], textColor: 255, fontStyle: 'bold' },
-    styles: { fontSize: 10, cellPadding: 5 }
+    styles: { fontSize: 9, cellPadding: 4 },
+    columnStyles: {
+      0: { cellWidth: 30 },
+      1: { cellWidth: 'auto' },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 40, halign: 'right' },
+    }
   });
 
   yPos = (doc as any).lastAutoTable.finalY + 15;
 
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const rightAlignX = pageWidth - 14;
+  const valueWidth = 40;
+  const labelX = rightAlignX - valueWidth - 5;
+
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 102, 204);
+  doc.setTextColor(0, 102, 202);
   const totalLabel = 'Total Received:';
   const totalVal = formatCurrency(receipt.amount, receipt.currency || 'MUR');
-  doc.text(totalLabel, 150, yPos, { align: 'right' });
-  doc.text(totalVal, 185, yPos, { align: 'right' });
+  doc.text(totalLabel, labelX, yPos, { align: 'right' });
+  doc.text(totalVal, rightAlignX, yPos, { align: 'right' });
 
   const pageHeight = doc.internal.pageSize.getHeight();
-  const pageWidth = doc.internal.pageSize.getWidth();
 
   doc.setFontSize(8);
   doc.setFont('helvetica', 'italic');
