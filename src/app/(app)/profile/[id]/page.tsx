@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { usersService } from '@/lib/firestore';
 import { User, BusinessDetails, OnboardingProduct } from '@/lib/types';
-import { ArrowLeft, User as UserIcon, Building2, Phone, Mail, MapPin, Globe, Briefcase, Package, Table as TableIcon } from 'lucide-react';
+import { ArrowLeft, User as UserIcon, Building2, Phone, Mail, MapPin, Globe, Briefcase, Package, Table as TableIcon, Plus } from 'lucide-react';
 import { FullPageLoading } from '@/components/shared/LoadingSpinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from '@/lib/utils';
@@ -76,8 +76,8 @@ export default function UserProfilePage() {
 
             // Trigger a silent update on the user doc too
             await usersService.update(id, {
-                businessDetails: editData,
-                businessName: editData.businessName,
+                businessDetails: editData as BusinessDetails,
+                businessName: editData.businessName || '',
                 onboardingCompleted: true // Ensure they are marked as onboarded if they save this
             });
 

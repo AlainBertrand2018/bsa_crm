@@ -1,7 +1,7 @@
 
 import * as firestore from "firebase/firestore";
 import { db } from "./firebase";
-import { Quotation, Invoice, ClientDetails, BusinessDetails, OnboardingProduct } from "./types";
+import { User, Quotation, Invoice, ClientDetails, BusinessDetails, OnboardingProduct } from "./types";
 
 // Helper to remove undefined values from objects (Firestore doesn't allow them)
 const cleanData = (data: any) => {
@@ -167,6 +167,8 @@ export const usersService = {
     getById: (id: string) => getDocument("users", id),
     getBusinessDetails: (userId: string) => getDocument("businesses", userId),
     getProducts: (userId: string) => getDocuments("user_products", [firestore.where("userId", "==", userId)]),
+    update: (id: string, data: Partial<User>) => updateDocument("users", id, data),
+    updateBusinessDetails: (userId: string, data: BusinessDetails) => setDocument("businesses", userId, data, { merge: true }),
     delete: (id: string) => deleteDocument("users", id),
 };
 
