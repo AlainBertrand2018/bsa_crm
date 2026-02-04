@@ -27,23 +27,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[Auth] Firebase user detected:', firebaseUser.uid);
 
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const unsubscribeDoc = onSnapshot(userDocRef, (docSnap: DocumentSnapshot) => {
+        const unsubscribeDoc = onSnapshot(userDocRef, async (docSnap: DocumentSnapshot) => {
           const userData = docSnap.exists() ? docSnap.data() as any : {};
 
           // HARDCODED BYPASS: Ensure 'alain.bertrand.mu@gmail.com' is always Super Admin
           const isHardcodedAdmin = firebaseUser.email === 'alain.bertrand.mu@gmail.com';
           let role = isHardcodedAdmin ? 'Super Admin' : ((userData.role === 'Super Admin' || userData.role === 'Admin') ? userData.role : 'User');
 
-          /*
-          console.log('[AuthContext Debug]', {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            userDataRole: userData.role,
-            resolvedRole: role,
-            onboardingCompletedDB: userData.onboardingCompleted,
-            finalOnboardingCompleted: (role === 'Super Admin' || role === 'Admin') ? true : userData.onboardingCompleted === true,
-          });
-          */
+          // Fallback for businessDetails: Try the businesses collection if missing from user doc
+          let businessDetails = userData.businessDetails;
+          if (!businessDetails && firebaseUser.uid) {
+            try {
+              const businessDoc = await getDoc(doc(db, 'businesses', firebaseUser.uid));
+              if (businessDoc.exists()) {
+                businessDetails = businessDoc.data();
+              }
+            } catch (e) {
+              console.error('[Auth] Fallback fetch error:', e);
+            }
+          }
 
           setCurrentUser({
             id: firebaseUser.uid,
@@ -52,8 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role,
             companyId: userData.companyId,
             onboardingCompleted: (role === 'Super Admin' || role === 'Admin') ? true : userData.onboardingCompleted === true,
-            businessName: userData.businessName,
-            businessDetails: userData.businessDetails,
+            businessName: userData.businessName || businessDetails?.businessName,
+            businessDetails: businessDetails,
             products: userData.products,
           });
 
@@ -142,6 +144,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const isHardcodedAdmin = firebaseUser.email === 'alain.bertrand.mu@gmail.com';
         const role = isHardcodedAdmin ? 'Super Admin' : ((userData.role === 'Super Admin' || userData.role === 'Admin') ? userData.role : 'User');
 
+        // Fallback for businessDetails
+        let businessDetails = userData.businessDetails;
+        if (!businessDetails && firebaseUser.uid) {
+          const businessDoc = await getDoc(doc(db, 'businesses', firebaseUser.uid));
+          if (businessDoc.exists()) {
+            businessDetails = businessDoc.data();
+          }
+        }
+
         setCurrentUser({
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
@@ -149,8 +160,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role,
           companyId: userData.companyId,
           onboardingCompleted: (role === 'Super Admin' || role === 'Admin') ? true : userData.onboardingCompleted === true,
-          businessName: userData.businessName,
-          businessDetails: userData.businessDetails,
+          businessName: userData.businessName || businessDetails?.businessName,
+          businessDetails: businessDetails,
           products: userData.products,
         });
       }

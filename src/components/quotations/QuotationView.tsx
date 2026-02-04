@@ -52,10 +52,17 @@ export function QuotationView({ quotation }: QuotationViewProps) {
         console.log('[QuotationView] Creator document:', creatorDoc);
 
         if (creatorDoc?.businessDetails) {
-          console.log('[QuotationView] Found creator business details:', creatorDoc.businessDetails);
+          console.log('[QuotationView] Found creator business details in user doc:', creatorDoc.businessDetails);
           setCreatorBusiness(creatorDoc.businessDetails);
         } else {
-          console.warn('[QuotationView] Creator document has no businessDetails');
+          console.warn('[QuotationView] Creator document has no businessDetails, trying businesses collection...');
+          const businessData = await usersService.getBusinessDetails(quotation.createdBy);
+          if (businessData) {
+            console.log('[QuotationView] Found creator business details in businesses collection:', businessData);
+            setCreatorBusiness(businessData as any);
+          } else {
+            console.warn('[QuotationView] No business details found in businesses collection either.');
+          }
         }
       } catch (error) {
         console.error("[QuotationView] Error fetching creator business details:", error);

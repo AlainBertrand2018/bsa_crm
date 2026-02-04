@@ -10,15 +10,20 @@ export function DocumentHeader({ businessDetails }: DocumentHeaderProps) {
   const { currentUser } = useAuth();
 
   // Priority: 1. Passed prop, 2. Logged in user's details, 3. Hardcoded constant
-  const activeDetails = businessDetails || currentUser?.businessDetails || COMPANY_DETAILS;
+  // We check if businessName or name exists to avoid using an empty object
+  const hasDetails = (details: any) => details && (details.businessName || details.name);
 
-  const name = ('businessName' in activeDetails ? activeDetails.businessName : '') || ('name' in activeDetails ? activeDetails.name : '');
-  const brn = activeDetails.brn;
-  const vat = ('vatNo' in activeDetails ? activeDetails.vatNo : '') || ('vat' in activeDetails ? activeDetails.vat : '');
-  const address = ('businessAddress' in activeDetails ? activeDetails.businessAddress : '') || ('address' in activeDetails ? activeDetails.address : '');
-  const tel = ('telephone' in activeDetails ? activeDetails.telephone : '') || ('tel' in activeDetails ? activeDetails.tel : '');
-  const email = activeDetails.email;
-  const website = ('website' in activeDetails ? activeDetails.website : '') || ('url' in activeDetails ? activeDetails.url : '');
+  const activeDetails = (hasDetails(businessDetails)
+    ? businessDetails
+    : (hasDetails(currentUser?.businessDetails) ? currentUser?.businessDetails : COMPANY_DETAILS)) as any;
+
+  const name = String(activeDetails?.businessName || activeDetails?.name || 'N/A');
+  const brn = String(activeDetails?.brn || 'N/A');
+  const vat = String(activeDetails?.vatNo || activeDetails?.vat || 'N/A');
+  const address = String(activeDetails?.businessAddress || activeDetails?.address || 'N/A');
+  const tel = String(activeDetails?.telephone || activeDetails?.tel || 'N/A');
+  const email = String(activeDetails?.email || 'N/A');
+  const website = String(activeDetails?.website || activeDetails?.url || '');
 
   return (
     <div className="mb-8 p-6 bg-card rounded-lg shadow">

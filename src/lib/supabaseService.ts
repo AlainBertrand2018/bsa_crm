@@ -25,18 +25,30 @@ export const supabaseService = {
     profiles: {
         get: async (userId: string) => {
             console.log(`[Shim] profiles.get(${userId})`);
-            const business: any = await usersService.getBusinessDetails(userId);
+
+            // 1. Try businesses collection first
+            let business: any = await usersService.getBusinessDetails(userId);
+
+            // 2. Fallback: Try user document
+            if (!business) {
+                const userDoc: any = await usersService.getById(userId);
+                if (userDoc?.businessDetails) {
+                    business = userDoc.businessDetails;
+                }
+            }
+
             if (!business) return null;
 
-            // Map Firestore BusinessDetails to Supabase Profile format
+            // Map BusinessDetails to Profile format
             return {
                 id: userId,
-                business_name: business.businessName,
-                business_address: business.businessAddress,
+                business_name: business.businessName || business.name,
+                business_address: business.businessAddress || business.address,
                 brn: business.brn,
-                vat_no: business.vatNo,
-                telephone: business.telephone,
-                website: business.website,
+                vat_no: business.vatNo || business.vat,
+                telephone: business.telephone || business.tel,
+                website: business.website || business.url,
+                email: business.email,
                 role: business.position,
                 onboarding_completed: true
             };

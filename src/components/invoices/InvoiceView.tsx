@@ -53,10 +53,17 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
         console.log('[InvoiceView] Creator document:', creatorDoc);
 
         if (creatorDoc?.businessDetails) {
-          console.log('[InvoiceView] Found creator business details:', creatorDoc.businessDetails);
+          console.log('[InvoiceView] Found creator business details in user doc:', creatorDoc.businessDetails);
           setCreatorBusiness(creatorDoc.businessDetails);
         } else {
-          console.warn('[InvoiceView] Creator document has no businessDetails');
+          console.warn('[InvoiceView] Creator document has no businessDetails, trying businesses collection...');
+          const businessData = await usersService.getBusinessDetails(invoice.createdBy);
+          if (businessData) {
+            console.log('[InvoiceView] Found creator business details in businesses collection:', businessData);
+            setCreatorBusiness(businessData as any);
+          } else {
+            console.warn('[InvoiceView] No business details found in businesses collection either.');
+          }
         }
       } catch (error) {
         console.error("[InvoiceView] Error fetching creator business details:", error);

@@ -18,13 +18,13 @@ const addDocumentHeader = (
   document: any,
   businessDetails?: BusinessDetails
 ) => {
-  const name = String(businessDetails?.businessName || COMPANY_DETAILS.name || 'N/A');
+  const name = String(businessDetails?.businessName || (businessDetails as any)?.name || COMPANY_DETAILS.name || 'N/A');
   const brn = String(businessDetails?.brn || COMPANY_DETAILS.brn || 'N/A');
-  const vat = businessDetails?.vatNo || COMPANY_DETAILS.vat;
-  const address = String(businessDetails?.businessAddress || COMPANY_DETAILS.address || 'N/A');
-  const tel = String(businessDetails?.telephone || COMPANY_DETAILS.tel || 'N/A');
+  const vat = String(businessDetails?.vatNo || (businessDetails as any)?.vat || COMPANY_DETAILS.vat || 'N/A');
+  const address = String(businessDetails?.businessAddress || (businessDetails as any)?.address || COMPANY_DETAILS.address || 'N/A');
+  const tel = String(businessDetails?.telephone || (businessDetails as any)?.tel || COMPANY_DETAILS.tel || 'N/A');
   const email = String(businessDetails?.email || COMPANY_DETAILS.email || 'N/A');
-  const website = businessDetails?.website || COMPANY_DETAILS.url;
+  const website = String(businessDetails?.website || (businessDetails as any)?.url || COMPANY_DETAILS.url || '');
 
   const pageWidth = doc.internal.pageSize.getWidth();
 
