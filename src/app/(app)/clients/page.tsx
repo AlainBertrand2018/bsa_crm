@@ -21,12 +21,87 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const clientSchema = z.object({
+    clientName: z.string().min(2, "Name must be at least 2 characters"),
+    clientEmail: z.string().email("Invalid email address"),
+    clientCompany: z.string().optional(),
+    clientPhone: z.string().optional(),
+    clientAddress: z.string().optional(),
+    clientBRN: z.string().optional(),
+});
+
+type ClientFormValues = z.infer<typeof clientSchema>;
 
 export default function ClientsPage() {
     const { currentUser } = useAuth();
     const { toast } = useToast();
     const [clients, setClients] = useState<ClientDetails[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const form = useForm<ClientFormValues>({
+        resolver: zodResolver(clientSchema),
+        defaultValues: {
+            clientName: '',
+            clientEmail: '',
+            clientCompany: '',
+            clientPhone: '',
+            clientAddress: '',
+            clientBRN: '',
+        }
+    });
+
+    const onSubmit = async (data: ClientFormValues) => {
+        if (!currentUser) return;
+        setIsSubmitting(true);
+        try {
+            await supabaseService.clients.create({
+                ...data,
+                user_id: currentUser.id,
+                companyId: currentUser.companyId,
+            });
+            toast({
+                title: "Client Created",
+                description: "The client record has been successfully added.",
+            });
+            setIsCreateModalOpen(false);
+            form.reset();
+            fetchClients();
+        } catch (error) {
+            console.error("Error creating client:", error);
+            toast({
+                title: "Error",
+                description: "Failed to create client record.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const fetchClients = async () => {
         if (!currentUser) return;
@@ -88,9 +163,113 @@ export default function ClientsPage() {
                 title="Clients"
                 description="Manage your client database."
                 actions={
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" /> New Client
-                    </Button>
+                    <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" /> New Client
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px]">
+                            <DialogHeader>
+                                <DialogTitle>Add New Client</DialogTitle>
+                                <DialogDescription>
+                                    Enter the details of the new client here. Click save when you're done.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="clientName"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Client Name</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="John Doe" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="clientEmail"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Email Address</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="john@example.com" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="clientCompany"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Company (Optional)</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Acme Inc." {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="clientPhone"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Phone (Optional)</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="+230 ..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="clientBRN"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>BRN (Optional)</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="C12345678" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="clientAddress"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Address (Optional)</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="123 Main St, Port Louis" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <DialogFooter className="pt-4">
+                                        <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                                            Cancel
+                                        </Button>
+                                        <Button type="submit" disabled={isSubmitting}>
+                                            {isSubmitting ? "Saving..." : "Save Client"}
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    </Dialog>
                 }
             />
             <Card>
