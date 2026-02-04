@@ -38,3 +38,9 @@ export function generateInvoiceId(clientName: string = "CLIENT"): string {
   return `INV-${clientPrefix}-${dateStr}-${String(invoiceCounter).padStart(4, '0')}`;
 }
 
+export function isValidBRN(brn: string): boolean {
+  if (!brn) return false;
+  // Format: 1 Alphabet prefix C or I, followed by 8 digits
+  const brnRegex = /^[CI]\d{8}$/i;
+  return brnRegex.test(brn.trim());
+}

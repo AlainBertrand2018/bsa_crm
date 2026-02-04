@@ -34,7 +34,9 @@ const quotationFormSchema = z.object({
   clientEmail: z.string().email("Invalid email address").min(1, "Client email is required"),
   clientPhone: z.string().optional(),
   clientAddress: z.string().optional(),
-  clientBRN: z.string().optional(),
+  clientBRN: z.string().refine(val => !val || /^[CI]\d{8}$/i.test(val), {
+    message: "BRN must be 'C' or 'I' followed by 8 digits"
+  }).optional(),
   items: z.array(quotationItemSchema).min(1, "At least one item is required"),
   discount: z.coerce.number().min(0, "Discount cannot be negative").optional().default(0),
   notes: z.string().optional(),

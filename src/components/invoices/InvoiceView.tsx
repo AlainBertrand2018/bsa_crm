@@ -40,10 +40,9 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
         return;
       }
 
-      // If no createdBy field, use current user's business details as fallback
+      // If no createdBy field, leave as undefined (DocumentHeader will use system defaults)
       if (!invoice.createdBy) {
-        console.warn('[InvoiceView] No createdBy field found in invoice, using current user business details');
-        setCreatorBusiness(currentUser?.businessDetails);
+        console.warn('[InvoiceView] No createdBy field found in invoice');
         return;
       }
 

@@ -75,11 +75,12 @@ export const deleteDocument = async (collectionName: string, id: string) => {
 export const quotationsService = {
     getAll: (userId?: string, role?: string, companyId?: string) => {
         const constraints: firestore.QueryConstraint[] = [];
-        if (role === 'User' && userId) {
-            constraints.push(firestore.where("createdBy", "==", userId));
+        if (role === 'Super Admin') {
+            // No constraints for Super Admin
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else if (role === 'Admin' && !companyId && userId) {
+        } else {
+            // Regular User or Admin without companyId sees only their own
             constraints.push(firestore.where("createdBy", "==", userId));
         }
         return getDocuments("quotations", constraints);
@@ -93,11 +94,11 @@ export const quotationsService = {
 export const invoicesService = {
     getAll: (userId?: string, role?: string, companyId?: string) => {
         const constraints: firestore.QueryConstraint[] = [];
-        if (role === 'User' && userId) {
-            constraints.push(firestore.where("createdBy", "==", userId));
+        if (role === 'Super Admin') {
+            // No constraints
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else if (role === 'Admin' && !companyId && userId) {
+        } else {
             constraints.push(firestore.where("createdBy", "==", userId));
         }
         return getDocuments("invoices", constraints);
@@ -111,11 +112,11 @@ export const invoicesService = {
 export const clientsService = {
     getAll: (userId?: string, role?: string, companyId?: string) => {
         const constraints: firestore.QueryConstraint[] = [];
-        if (role === 'User' && userId) {
-            constraints.push(firestore.where("createdBy", "==", userId));
+        if (role === 'Super Admin') {
+            // No constraints
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else if (role === 'Admin' && !companyId && userId) {
+        } else {
             constraints.push(firestore.where("createdBy", "==", userId));
         }
         return getDocuments("clients", constraints);
@@ -157,15 +158,21 @@ export const onboardingService = {
 };
 
 export const usersService = {
-    getAll: (companyId?: string, role?: string) => {
+    getAll: (userId?: string, role?: string, companyId?: string) => {
         const constraints: firestore.QueryConstraint[] = [];
-        if (role === 'Admin' && companyId) {
+        if (role === 'Super Admin') {
+            // Sees all
+        } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
+        } else {
+            // Regular users see only themselves
+            constraints.push(firestore.where("id", "==", userId));
         }
         return getDocuments("users", constraints);
     },
     getById: (id: string) => getDocument("users", id),
     getBusinessDetails: (userId: string) => getDocument("businesses", userId),
+    getAllBusinesses: () => getDocuments("businesses"),
     getProducts: (userId: string) => getDocuments("user_products", [firestore.where("userId", "==", userId)]),
     update: (id: string, data: Partial<User>) => updateDocument("users", id, data),
     updateBusinessDetails: (userId: string, data: BusinessDetails) => setDocument("businesses", userId, data, { merge: true }),
@@ -176,15 +183,14 @@ export const productsService = {
     getAll: (userId?: string, role?: string, companyId?: string) => {
         const constraints: firestore.QueryConstraint[] = [];
 
-        // Always filter by userId if provided - each user sees their own products
-        if (userId) {
-            constraints.push(firestore.where("userId", "==", userId));
-        } else if (companyId) {
-            // Fallback to companyId for company-wide product queries
+        if (role === 'Super Admin') {
+            // No constraints
+        } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
         } else {
-            console.warn("[Firestore] Products fetch without userId or companyId - returning empty");
-            return Promise.resolve([]);
+            // Regular user sees their own or their team's if companyId is present
+            // But per requirement 3: "Users can see whatever they create"
+            constraints.push(firestore.where("userId", "==", userId));
         }
 
         return getDocuments("user_products", constraints);
@@ -197,16 +203,12 @@ export const productsService = {
 export const receiptsService = {
     getAll: (userId?: string, role?: string, companyId?: string) => {
         const constraints: firestore.QueryConstraint[] = [];
-        if (role === 'User' && userId) {
-            constraints.push(firestore.where("createdBy", "==", userId));
+        if (role === 'Super Admin') {
+            // No constraints
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else if (role === 'Admin' && !companyId && userId) {
+        } else {
             constraints.push(firestore.where("createdBy", "==", userId));
-        } else if (role === 'User' && !userId) {
-            // Fallback for safety
-            console.warn("[Firestore] Receipts fetch by User without ID");
-            return Promise.resolve([]);
         }
         return getDocuments("receipts", constraints);
     },
@@ -218,15 +220,12 @@ export const receiptsService = {
 export const statementsService = {
     getAll: (userId?: string, role?: string, companyId?: string) => {
         const constraints: firestore.QueryConstraint[] = [];
-        if (role === 'User' && userId) {
-            constraints.push(firestore.where("createdBy", "==", userId));
+        if (role === 'Super Admin') {
+            // No constraints
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else if (role === 'Admin' && !companyId && userId) {
+        } else {
             constraints.push(firestore.where("createdBy", "==", userId));
-        } else if (role === 'User' && !userId) {
-            console.warn("[Firestore] Statements fetch by User without ID");
-            return Promise.resolve([]);
         }
         return getDocuments("statements", constraints);
     },

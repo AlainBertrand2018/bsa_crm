@@ -27,24 +27,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[Auth] Firebase user detected:', firebaseUser.uid);
 
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const unsubscribeDoc = onSnapshot(userDocRef, async (docSnap: DocumentSnapshot) => {
-          const userData = docSnap.exists() ? docSnap.data() as any : {};
+        const businessDocRef = doc(db, 'businesses', firebaseUser.uid);
 
+        let userData: any = {};
+        let businessDetails: any = null;
+
+        const updateState = () => {
           // HARDCODED BYPASS: Ensure 'alain.bertrand.mu@gmail.com' is always Super Admin
           const isHardcodedAdmin = firebaseUser.email === 'alain.bertrand.mu@gmail.com';
           let role = isHardcodedAdmin ? 'Super Admin' : ((userData.role === 'Super Admin' || userData.role === 'Admin') ? userData.role : 'User');
 
-          // Fallback for businessDetails: Try the businesses collection if missing from user doc
-          let businessDetails = userData.businessDetails;
-          if (!businessDetails && firebaseUser.uid) {
-            try {
-              const businessDoc = await getDoc(doc(db, 'businesses', firebaseUser.uid));
-              if (businessDoc.exists()) {
-                businessDetails = businessDoc.data();
-              }
-            } catch (e) {
-              console.error('[Auth] Fallback fetch error:', e);
-            }
+          // Trace data for debugging
+          console.log('[Auth Debug] User Data:', {
+            id: firebaseUser.uid,
+            onboarding_raw: userData.onboarding,
+            onboardingCompleted_raw: userData.onboardingCompleted,
+            hasBusinessDetails: !!userData.businessDetails,
+            businessName: userData.businessDetails?.businessName,
+            bizCollName: businessDetails?.businessName
+          });
+
+          // A user is considered to have completed onboarding if:
+          // 1. They are the Hardcoded Super Admin (Forced bypass)
+          // 2. onboardingCompleted flag is true or 'true' or 'True'
+          // 3. onboarding string flag is 'True' or 'true' or true
+          // 4. onboardingStatus string flag is 'True' or 'true' or true
+          // 5. They have businessDetails with a businessName (anywhere)
+          const checkFlag = (val: any) => val === true || String(val).toLowerCase() === 'true';
+
+          const onboardingCompleted =
+            isHardcodedAdmin ||
+            checkFlag(userData.onboardingCompleted) ||
+            checkFlag(userData.onboarding) ||
+            checkFlag(userData.onboardingStatus) ||
+            !!(userData.businessDetails?.businessName || businessDetails?.businessName);
+
+          console.log('[Auth Debug] Final onboardingCompleted:', onboardingCompleted);
+
+          // Prevent access for suspended/locked accounts
+          if (!isHardcodedAdmin && userData.status && userData.status !== 'active') {
+            const statusLabel = userData.status.charAt(0).toUpperCase() + userData.status.slice(1);
+            console.error(`[Auth] Account is ${statusLabel}. Logging out.`);
+            auth.signOut();
+            setCurrentUser(null);
+            setIsLoading(false);
+            return;
           }
 
           setCurrentUser({
@@ -52,19 +79,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: firebaseUser.email || '',
             name: userData.name || firebaseUser.displayName || 'User',
             role,
+            status: userData.status || 'active',
             companyId: userData.companyId,
-            onboardingCompleted: userData.onboardingCompleted === true,
-            businessName: userData.businessName || businessDetails?.businessName,
-            businessDetails: businessDetails,
+            onboardingCompleted,
+            businessName: userData.businessName || businessDetails?.businessName || userData.businessDetails?.businessName,
+            businessDetails: businessDetails || userData.businessDetails,
             products: userData.products,
           });
-
           setIsLoading(false);
+        };
+
+        const unsubscribeDoc = onSnapshot(userDocRef, (docSnap) => {
+          userData = docSnap.exists() ? docSnap.data() as any : {};
+          console.log('[Auth Debug] Received User Doc:', userData);
+          updateState();
         }, (error) => {
           console.error("[Auth] Firestore listener error:", error);
           setIsLoading(false);
         });
-        return () => unsubscribeDoc();
+
+        const unsubscribeBusiness = onSnapshot(businessDocRef, (bizSnap) => {
+          if (bizSnap.exists()) {
+            businessDetails = bizSnap.data();
+            updateState();
+          }
+        });
+
+        return () => {
+          unsubscribeDoc();
+          unsubscribeBusiness();
+        };
       } else {
         setCurrentUser(null);
         setIsLoading(false);

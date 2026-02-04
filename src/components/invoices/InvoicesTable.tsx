@@ -169,10 +169,10 @@ The Team at ${businessName}
   const handleDeleteInvoice = async () => {
     if (!invoiceToDelete) return;
 
-    if (currentUser?.role !== 'Super Admin') {
+    if (currentUser?.role === 'User') {
       toast({
         title: "Permission Denied",
-        description: "Only Super Admins can delete data.",
+        description: "Regular users cannot delete invoices.",
         variant: "destructive",
       });
       return;
@@ -312,7 +312,7 @@ The Team at ${businessName}
                       <CreditCard className="mr-2 h-4 w-4" /> Register Payment
                     </DropdownMenuItem>
 
-                    {isSuperAdmin && (
+                    {(isSuperAdmin || currentUser?.role === 'Admin') && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

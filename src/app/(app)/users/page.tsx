@@ -36,7 +36,7 @@ export default function UsersPage() {
 
     const fetchUsers = async () => {
         try {
-            const data = await usersService.getAll(currentUser?.companyId, currentUser?.role);
+            const data = await usersService.getAll(currentUser?.id, currentUser?.role, currentUser?.companyId);
             setUsers(data as User[]);
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -104,7 +104,7 @@ export default function UsersPage() {
                 title="User Management"
                 description="Monitor and manage system users and their profiles."
                 actions={
-                    currentUser?.role === 'Super Admin' && (
+                    (currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
                         <Link href="/users/new">
                             <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
                                 <UserPlus className="mr-2 h-4 w-4" /> Add New User
@@ -123,7 +123,7 @@ export default function UsersPage() {
                                 <TableHead>Email</TableHead>
                                 <TableHead>Role</TableHead>
                                 <TableHead>Business</TableHead>
-                                <TableHead>Onboarding</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead className="text-right pr-6">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -160,8 +160,11 @@ export default function UsersPage() {
                                             <span className="text-sm font-medium">{user.businessName || 'N/A'}</span>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={user.onboardingCompleted ? 'success' as any : 'warning' as any}>
-                                                {user.onboardingCompleted ? 'Completed' : 'Pending'}
+                                            <Badge variant={
+                                                !user.status || user.status === 'active' ? 'outline' :
+                                                    user.status === 'suspended' ? 'destructive' : 'secondary'
+                                            }>
+                                                {user.status || 'active'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right pr-6">
@@ -171,6 +174,20 @@ export default function UsersPage() {
                                                         <Eye className="mr-2 h-4 w-4" /> View Profile
                                                     </Button>
                                                 </Link>
+                                                {currentUser?.role === 'Super Admin' && user.id !== currentUser?.id && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={async () => {
+                                                            const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
+                                                            await usersService.update(user.id, { status: newStatus });
+                                                            toast({ title: `User ${newStatus === 'active' ? 'Activated' : 'Suspended'}` });
+                                                            fetchUsers();
+                                                        }}
+                                                    >
+                                                        {user.status === 'suspended' ? 'Activate' : 'Suspend'}
+                                                    </Button>
+                                                )}
                                                 {currentUser?.role === 'Super Admin' && user.id !== currentUser?.id && (
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>

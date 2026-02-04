@@ -98,6 +98,17 @@ const OnboardingPage = () => {
                 });
                 return;
             }
+
+            // Validate BRN format
+            const brnRegex = /^[CI]\d{8}$/i;
+            if (!brnRegex.test(businessData.brn.trim())) {
+                toast({
+                    title: "Invalid BRN Format",
+                    description: "BRN must be 'C' or 'I' followed by 8 digits (e.g., C15127871).",
+                    variant: "destructive",
+                });
+                return;
+            }
         }
         setStep(step + 1);
     };

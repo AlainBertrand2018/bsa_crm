@@ -41,10 +41,18 @@ export default function AdministrativeToolsPage() {
 
     const adminTools = [
         {
+            title: "User Management",
+            description: "Supervise all system users, manage roles, and monitor account status.",
+            href: "/users",
+            icon: Users,
+            color: "text-indigo-500",
+            bg: "bg-indigo-500/10"
+        },
+        {
             title: "User Setup",
             description: "Initialize and synchronize Firebase Auth users with Firestore records.",
             href: "/setup-users",
-            icon: Users,
+            icon: Settings,
             color: "text-blue-500",
             bg: "bg-blue-500/10"
         },

@@ -112,10 +112,10 @@ export default function ProductsPage() {
     }, [currentUser]);
 
     const handleDelete = async (productId: string) => {
-        if (currentUser?.role !== 'Super Admin') {
+        if (currentUser?.role === 'User') {
             toast({
                 title: "Permission Denied",
-                description: "Only Super Admins can delete data.",
+                description: "Regular users cannot delete product records.",
                 variant: "destructive",
             });
             return;
@@ -349,7 +349,7 @@ export default function ProductsPage() {
                                 <TableHead className="text-right">Unit Price</TableHead>
                                 <TableHead className="text-right">Inventory</TableHead>
                                 <TableHead className="text-right">Min Order</TableHead>
-                                {currentUser?.role === 'Super Admin' && (
+                                {currentUser?.role !== 'User' && (
                                     <TableHead className="text-right">Actions</TableHead>
                                 )}
                             </TableRow>
@@ -392,7 +392,7 @@ export default function ProductsPage() {
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">{product.minOrder}</TableCell>
-                                        {currentUser?.role === 'Super Admin' && (
+                                        {currentUser?.role !== 'User' && (
                                             <TableCell className="text-right">
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>

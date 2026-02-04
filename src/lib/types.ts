@@ -98,6 +98,8 @@ export interface User {
   role: 'Super Admin' | 'Admin' | 'User';
   companyId?: string;
   onboardingCompleted?: boolean;
+  onboardingStatus?: string;
+  status?: 'active' | 'suspended' | 'locked' | 'terminated';
   businessName?: string;
   businessDetails?: BusinessDetails;
   products?: OnboardingProduct[];

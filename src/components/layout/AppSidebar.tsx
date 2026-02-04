@@ -15,6 +15,7 @@ import {
 import { LayoutDashboard, FileText, FilePlus, Bot, Settings, LogOut, Users, Package, Receipt, ScrollText, Wrench, type LucideIcon } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
+import { Logo } from "@/components/shared/Logo";
 
 const navItems: NavItemType[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -41,24 +42,16 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" variant="sidebar" side="left">
       <SidebarHeader className="p-4 items-center justify-center">
-        <Link href="/dashboard" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
-          {/* Using an inline SVG for the logo as per guidelines on non-textual code */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-8 w-8 text-primary group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6 transition-all"
-            aria-label="BSA CRM Systems Logo"
-          >
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-          </svg>
-          <span className="font-bold text-lg text-primary group-data-[collapsible=icon]:hidden font-headline">
-            {currentUser?.businessDetails?.businessName || APP_NAME}
-          </span>
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <Logo
+            businessName={currentUser?.businessDetails?.businessName}
+            className="group-data-[collapsible=icon]:hidden"
+          />
+          <Logo
+            businessName={currentUser?.businessDetails?.businessName}
+            iconOnly
+            className="hidden group-data-[collapsible=icon]:flex"
+          />
         </Link>
       </SidebarHeader>
       <SidebarContent className="p-2">

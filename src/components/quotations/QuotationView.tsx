@@ -39,10 +39,9 @@ export function QuotationView({ quotation }: QuotationViewProps) {
         return;
       }
 
-      // If no createdBy field, use current user's business details as fallback
+      // If no createdBy field, leave as undefined (DocumentHeader will use system defaults)
       if (!quotation.createdBy) {
-        console.warn('[QuotationView] No createdBy field found in quotation, using current user business details');
-        setCreatorBusiness(currentUser?.businessDetails);
+        console.warn('[QuotationView] No createdBy field found in quotation');
         return;
       }
 

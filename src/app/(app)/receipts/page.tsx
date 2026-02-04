@@ -66,10 +66,10 @@ export default function ReceiptsPage() {
     }, [currentUser]);
 
     const handleDelete = async (receiptId: string) => {
-        if (currentUser?.role !== 'Super Admin') {
+        if (currentUser?.role === 'User') {
             toast({
                 title: "Permission Denied",
-                description: "Only Super Admins can delete data.",
+                description: "Regular users cannot delete receipts.",
                 variant: "destructive",
             });
             return;
@@ -194,7 +194,7 @@ export default function ReceiptsPage() {
                                                 >
                                                     <Download className="h-4 w-4" />
                                                 </Button>
-                                                {currentUser?.role === 'Super Admin' && (
+                                                {currentUser?.role !== 'User' && (
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
                                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">

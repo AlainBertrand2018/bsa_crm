@@ -8,6 +8,7 @@ import { Sun, Moon, LogOut, UserCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { Logo } from "@/components/shared/Logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,7 +49,7 @@ export function AppHeader() {
         <div className="md:hidden">
           <SidebarTrigger />
         </div>
-        <h1 className="text-xl font-semibold text-primary font-headline">{APP_NAME}</h1>
+        <Logo businessName={currentUser?.businessDetails?.businessName} />
         <div className="ml-auto flex items-center gap-4">
           <Button variant="ghost" size="icon" aria-label="Toggle theme" className="h-8 w-8">
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -67,7 +68,7 @@ export function AppHeader() {
       <div className="md:hidden">
         <SidebarTrigger />
       </div>
-      <h1 className="text-xl font-semibold text-primary font-headline">{APP_NAME}</h1>
+      <Logo businessName={currentUser?.businessDetails?.businessName} />
       <div className="ml-auto flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme" className="h-8 w-8">
           {isDarkMode ?

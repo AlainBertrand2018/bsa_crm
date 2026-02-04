@@ -50,7 +50,9 @@ const clientSchema = z.object({
     clientCompany: z.string().optional(),
     clientPhone: z.string().optional(),
     clientAddress: z.string().optional(),
-    clientBRN: z.string().optional(),
+    clientBRN: z.string().refine(val => !val || /^[CI]\d{8}$/i.test(val), {
+        message: "BRN must be 'C' or 'I' followed by 8 digits"
+    }).optional(),
 });
 
 type ClientFormValues = z.infer<typeof clientSchema>;
@@ -125,10 +127,10 @@ export default function ClientsPage() {
     };
 
     const handleDelete = async (clientId: string) => {
-        if (currentUser?.role !== 'Super Admin') {
+        if (currentUser?.role === 'User') {
             toast({
                 title: "Permission Denied",
-                description: "Only Super Admins can delete data.",
+                description: "Regular users cannot delete client records.",
                 variant: "destructive",
             });
             return;
@@ -281,7 +283,7 @@ export default function ClientsPage() {
                                 <TableHead>Company</TableHead>
                                 <TableHead>Contact</TableHead>
                                 <TableHead>BRN</TableHead>
-                                {currentUser?.role === 'Super Admin' && (
+                                {currentUser?.role !== 'User' && (
                                     <TableHead className="text-right">Actions</TableHead>
                                 )}
                             </TableRow>
@@ -327,7 +329,7 @@ export default function ClientsPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell>{client.clientBRN || '-'}</TableCell>
-                                        {currentUser?.role === 'Super Admin' && (
+                                        {currentUser?.role !== 'User' && (
                                             <TableCell className="text-right">
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>

@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import type { Quotation, Invoice, DocumentItem, BusinessDetails } from './types';
 import { COMPANY_DETAILS, VAT_RATE } from './constants';
-import { formatCurrency, formatDate } from './utils';
+import { formatCurrency, formatDate, isValidBRN } from './utils';
 
 // Extend jsPDF with autoTable, otherwise TypeScript might complain
 declare module 'jspdf' {
@@ -19,7 +19,8 @@ const addDocumentHeader = (
   businessDetails?: BusinessDetails
 ) => {
   const name = String(businessDetails?.businessName || (businessDetails as any)?.name || COMPANY_DETAILS.name || 'N/A');
-  const brn = String(businessDetails?.brn || COMPANY_DETAILS.brn || 'N/A');
+  const rawBrn = String(businessDetails?.brn || COMPANY_DETAILS.brn || 'N/A');
+  const brn = isValidBRN(rawBrn) ? rawBrn : '';
   const vat = String(businessDetails?.vatNo || (businessDetails as any)?.vat || COMPANY_DETAILS.vat || 'N/A');
   const address = String(businessDetails?.businessAddress || (businessDetails as any)?.address || COMPANY_DETAILS.address || 'N/A');
   const tel = String(businessDetails?.telephone || (businessDetails as any)?.tel || COMPANY_DETAILS.tel || 'N/A');
@@ -41,8 +42,17 @@ const addDocumentHeader = (
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
-  doc.text(`BRN: ${brn}`, 14, 32);
-  if (vat) doc.text(`VAT: ${vat}`, 60, 32);
+
+  let headerInfo = "";
+  if (brn && brn !== 'N/A') headerInfo += `BRN: ${brn}`;
+  if (vat && vat !== 'N/A') {
+    if (headerInfo) headerInfo += "  |  ";
+    headerInfo += `VAT: ${vat}`;
+  }
+
+  if (headerInfo) {
+    doc.text(headerInfo, 14, 32);
+  }
 
   doc.text(address, 14, 37);
   doc.text(`Tel: ${tel} | Email: ${email}`, 14, 42);
@@ -117,7 +127,7 @@ const addClientDetails = (doc: jsPDF, yPos: number, document: Quotation | Invoic
     currentY += (addressLines.length * 5);
   }
 
-  if (document.clientBRN && document.clientBRN !== 'undefined') {
+  if (document.clientBRN && document.clientBRN !== 'undefined' && isValidBRN(document.clientBRN)) {
     doc.text(`BRN: ${document.clientBRN}`, 14, currentY);
     currentY += 5;
   }
@@ -314,7 +324,7 @@ export const generateReceiptPdf = (
     doc.text(addressLines, 14, currentY);
     currentY += (addressLines.length * 5);
   }
-  if (clientBRN) {
+  if (clientBRN && isValidBRN(clientBRN)) {
     doc.text(`BRN: ${clientBRN}`, 14, currentY);
     currentY += 5;
   }

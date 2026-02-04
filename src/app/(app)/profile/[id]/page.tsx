@@ -69,6 +69,18 @@ export default function UserProfilePage() {
 
     const handleSaveBusiness = async () => {
         if (!id) return;
+
+        // Validate BRN format
+        const brnRegex = /^[CI]\d{8}$/i;
+        if (editData.brn && !brnRegex.test(editData.brn.trim())) {
+            toast({
+                title: "Invalid BRN Format",
+                description: "BRN must be 'C' or 'I' followed by 8 digits (e.g., C15127871).",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setIsSaving(true);
         try {
             // Update in both locations for consistency
@@ -145,6 +157,9 @@ export default function UserProfilePage() {
                             <div className="flex justify-center gap-2 mt-4">
                                 <Badge variant={user.role === 'Super Admin' ? 'default' : 'secondary'}>
                                     {user.role}
+                                </Badge>
+                                <Badge variant={(!user.status || user.status === 'active') ? 'outline' : 'destructive'}>
+                                    {user.status || 'active'}
                                 </Badge>
                                 <Badge variant={user.onboardingCompleted ? 'success' as any : 'warning' as any}>
                                     {user.onboardingCompleted ? 'Onboarded' : 'Pending Onboarding'}

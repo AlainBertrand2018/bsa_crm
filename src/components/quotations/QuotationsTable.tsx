@@ -152,10 +152,10 @@ The Team at ${businessName}
   const handleDeleteQuotation = async () => {
     if (!quotationToDelete) return;
 
-    if (currentUser?.role !== 'Super Admin') {
+    if (currentUser?.role === 'User') {
       toast({
         title: "Permission Denied",
-        description: "Only Super Admins can delete data.",
+        description: "Regular users cannot delete quotations.",
         variant: "destructive",
       });
       return;
@@ -254,7 +254,7 @@ The Team at ${businessName}
                           )}
                         </DropdownMenuItem>
 
-                        {isSuperAdmin && (
+                        {(isSuperAdmin || currentUser?.role === 'Admin') && (
                           <DropdownMenuItem
                             onClick={() => {
                               setQuotationToDelete(quotation.id);

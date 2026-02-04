@@ -65,6 +65,13 @@ export const supabaseService = {
             if (updates.website) firestoreUpdates.website = updates.website;
 
             await updateDocument('businesses', userId, firestoreUpdates);
+
+            // Also update the users collection for redundancy and to trigger the onSnapshot listener
+            await updateDocument('users', userId, {
+                businessDetails: firestoreUpdates,
+                businessName: firestoreUpdates.businessName || undefined
+            });
+
             return { success: true };
         }
     },
@@ -76,12 +83,19 @@ export const supabaseService = {
             const data = await clientsService.getAll(userId, role, companyId);
             return data.map((c: any) => ({
                 ...c,
-                client_name: c.clientName,
-                client_email: c.clientEmail,
-                client_company: c.clientCompany,
-                client_phone: c.clientPhone,
-                client_address: c.clientAddress,
-                client_brn: c.clientBRN
+                client_name: c.clientName || c.client_name,
+                client_email: c.clientEmail || c.client_email,
+                client_company: c.clientCompany || c.client_company,
+                client_phone: c.clientPhone || c.client_phone,
+                client_address: c.clientAddress || c.client_address,
+                client_brn: c.clientBRN || c.client_brn,
+                // Ensure camelCase is also present
+                clientName: c.clientName || c.client_name,
+                clientEmail: c.clientEmail || c.client_email,
+                clientCompany: c.clientCompany || c.client_company,
+                clientPhone: c.clientPhone || c.client_phone,
+                clientAddress: c.clientAddress || c.client_address,
+                clientBRN: c.clientBRN || c.client_brn,
             }));
         },
         create: async (client: any) => {
@@ -106,12 +120,18 @@ export const supabaseService = {
             if (!c) return null;
             return {
                 ...c,
-                client_name: c.clientName,
-                client_email: c.clientEmail,
-                client_company: c.clientCompany,
-                client_phone: c.clientPhone,
-                client_address: c.clientAddress,
-                client_brn: c.clientBRN
+                client_name: c.clientName || c.client_name,
+                client_email: c.clientEmail || c.client_email,
+                client_company: c.clientCompany || c.client_company,
+                client_phone: c.clientPhone || c.client_phone,
+                client_address: c.clientAddress || c.client_address,
+                client_brn: c.clientBRN || c.client_brn,
+                clientName: c.clientName || c.client_name,
+                clientEmail: c.clientEmail || c.client_email,
+                clientCompany: c.clientCompany || c.client_company,
+                clientPhone: c.clientPhone || c.client_phone,
+                clientAddress: c.clientAddress || c.client_address,
+                clientBRN: c.clientBRN || c.client_brn,
             };
         },
         update: async (id: string, updates: any) => {
@@ -135,7 +155,18 @@ export const supabaseService = {
         getAll: async (userId?: string, role?: string, companyId?: string) => {
             console.log(`[Shim] products.getAll(userId=${userId}, role=${role}, companyId=${companyId})`);
             const data = await productsService.getAll(userId, role, companyId);
-            return data;
+            return data.map((p: any) => ({
+                ...p,
+                unit_price: p.unitPrice || p.unit_price,
+                bulk_price: p.bulkPrice || p.bulk_price,
+                min_order: p.minOrder || p.min_order,
+                user_id: p.userId || p.user_id,
+                // Keep camelCase
+                unitPrice: p.unitPrice || p.unit_price,
+                bulkPrice: p.bulkPrice || p.bulk_price,
+                minOrder: p.minOrder || p.min_order,
+                userId: p.userId || p.user_id,
+            }));
         },
         create: async (product: any) => {
             console.log(`[Shim] products.create()`, product);
@@ -170,13 +201,31 @@ export const supabaseService = {
             const data = await quotationsService.getAll(userId, role, companyId);
             return data.map((q: any) => ({
                 ...q,
-                user_id: q.createdBy,
-                client_id: q.clientId,
-                quotation_date: q.quotationDate,
-                expiry_date: q.expiryDate,
-                sub_total: q.subTotal,
-                vat_amount: q.vatAmount,
-                grand_total: q.grandTotal
+                user_id: q.createdBy || q.user_id,
+                client_id: q.clientId || q.client_id,
+                quotation_date: q.quotationDate || q.quotation_date,
+                expiry_date: q.expiryDate || q.expiry_date,
+                sub_total: q.subTotal || q.sub_total,
+                vat_amount: q.vatAmount || q.vat_amount,
+                grand_total: q.grandTotal || q.grand_total,
+                client_name: q.clientName || q.client_name,
+                client_email: q.clientEmail || q.client_email,
+                client_company: q.clientCompany || q.client_company,
+                client_phone: q.clientPhone || q.client_phone,
+                client_address: q.clientAddress || q.client_address,
+                client_brn: q.clientBRN || q.client_brn,
+                // Ensure camelCase
+                quotationDate: q.quotationDate || q.quotation_date,
+                expiryDate: q.expiryDate || q.expiry_date,
+                subTotal: q.subTotal || q.sub_total,
+                vatAmount: q.vatAmount || q.vat_amount,
+                grandTotal: q.grandTotal || q.grand_total,
+                clientName: q.clientName || q.client_name,
+                clientEmail: q.clientEmail || q.client_email,
+                clientCompany: q.clientCompany || q.client_company,
+                clientPhone: q.clientPhone || q.client_phone,
+                clientAddress: q.clientAddress || q.client_address,
+                clientBRN: q.clientBRN || q.client_brn,
             }));
         },
         create: async (quotation: any) => {
@@ -313,14 +362,33 @@ export const supabaseService = {
             const data = await invoicesService.getAll(userId, role, companyId);
             return data.map((i: any) => ({
                 ...i,
-                user_id: i.createdBy,
-                client_id: i.clientId,
-                invoice_date: i.invoiceDate,
-                due_date: i.dueDate,
-                sub_total: i.subTotal,
-                vat_amount: i.vatAmount,
-                grand_total: i.grandTotal,
-                total_paid: i.totalPaid || 0
+                user_id: i.createdBy || i.user_id,
+                client_id: i.clientId || i.client_id,
+                invoice_date: i.invoiceDate || i.invoice_date,
+                due_date: i.dueDate || i.due_date,
+                sub_total: i.subTotal || i.sub_total,
+                vat_amount: i.vatAmount || i.vat_amount,
+                grand_total: i.grandTotal || i.grand_total,
+                total_paid: i.totalPaid || i.total_paid || 0,
+                client_name: i.clientName || i.client_name,
+                client_email: i.clientEmail || i.client_email,
+                client_company: i.clientCompany || i.client_company,
+                client_phone: i.clientPhone || i.client_phone,
+                client_address: i.clientAddress || i.client_address,
+                client_brn: i.clientBRN || i.client_brn,
+                // Ensure camelCase
+                invoiceDate: i.invoiceDate || i.invoice_date,
+                dueDate: i.dueDate || i.due_date,
+                subTotal: i.subTotal || i.sub_total,
+                vatAmount: i.vatAmount || i.vat_amount,
+                grandTotal: i.grandTotal || i.grand_total,
+                totalPaid: i.totalPaid || i.total_paid || 0,
+                clientName: i.clientName || i.client_name,
+                clientEmail: i.clientEmail || i.client_email,
+                clientCompany: i.clientCompany || i.client_company,
+                clientPhone: i.clientPhone || i.client_phone,
+                clientAddress: i.clientAddress || i.client_address,
+                clientBRN: i.clientBRN || i.client_brn,
             }));
         },
         create: async (invoice: any) => {
@@ -387,15 +455,25 @@ export const supabaseService = {
             const data = await receiptsService.getAll(userId, role, companyId);
             return data.map((r: any) => ({
                 ...r,
-                user_id: r.createdBy,
-                invoice_id: r.invoiceId,
-                client_name: r.clientName,
-                client_company: r.clientCompany,
-                client_email: r.clientEmail,
-                client_phone: r.clientPhone,
-                client_address: r.clientAddress,
-                client_brn: r.clientBRN,
-                payment_method: r.paymentMethod,
+                user_id: r.createdBy || r.user_id,
+                invoice_id: r.invoiceId || r.invoice_id,
+                client_name: r.clientName || r.client_name,
+                client_company: r.clientCompany || r.client_company,
+                client_email: r.clientEmail || r.client_email,
+                client_phone: r.clientPhone || r.client_phone,
+                client_address: r.clientAddress || r.client_address,
+                client_brn: r.clientBRN || r.client_brn,
+                payment_method: r.paymentMethod || r.payment_method,
+                // Ensure camelCase
+                invoiceId: r.invoiceId || r.invoice_id,
+                clientName: r.clientName || r.client_name,
+                clientCompany: r.clientCompany || r.client_company,
+                clientEmail: r.clientEmail || r.client_email,
+                clientPhone: r.clientPhone || r.client_phone,
+                clientAddress: r.clientAddress || r.client_address,
+                clientBRN: r.clientBRN || r.client_brn,
+                paymentMethod: r.paymentMethod || r.payment_method,
+                createdBy: r.createdBy || r.user_id,
             }));
         },
         create: async (receipt: any) => {
@@ -452,7 +530,14 @@ export const supabaseService = {
     statements: {
         getAll: async (userId?: string, role?: string, companyId?: string) => {
             const data = await statementsService.getAll(userId, role, companyId);
-            return data;
+            return data.map((s: any) => ({
+                ...s,
+                user_id: s.createdBy || s.user_id,
+                client_name: s.clientName || s.client_name,
+                // Ensure camelCase
+                clientName: s.clientName || s.client_name,
+                createdBy: s.createdBy || s.user_id,
+            }));
         },
         create: async (statement: any) => {
             const firestoreStatement = {
