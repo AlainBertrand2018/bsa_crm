@@ -151,14 +151,15 @@ export const usersService = {
 export const productsService = {
     getAll: (userId?: string, role?: string, companyId?: string) => {
         const constraints: firestore.QueryConstraint[] = [];
-        if (role === 'User' && userId) {
+
+        // Always filter by userId if provided - each user sees their own products
+        if (userId) {
             constraints.push(firestore.where("userId", "==", userId));
-        } else if (role === 'Admin' && companyId) {
+        } else if (companyId) {
+            // Fallback to companyId for company-wide product queries
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else if (role === 'Admin' && !companyId && userId) {
-            constraints.push(firestore.where("userId", "==", userId));
-        } else if (role === 'User' && !userId) {
-            console.warn("[Firestore] Products fetch by User without ID");
+        } else {
+            console.warn("[Firestore] Products fetch without userId or companyId - returning empty");
             return Promise.resolve([]);
         }
 

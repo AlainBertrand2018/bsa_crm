@@ -11,9 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { VAT_RATE, QUOTATION_STATUSES } from '@/lib/constants';
-import type { DocumentItem, Quotation, ClientDetails, Product } from '@/lib/types';
+import type { DocumentItem, Quotation, Product } from '@/lib/types';
 import { formatCurrency, formatDate, generateQuotationId } from '@/lib/utils';
-import { PlusCircle, Trash2, Save, Send, UserPlus } from 'lucide-react';
+import { PlusCircle, Trash2, Save, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -56,34 +56,19 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
   const router = useRouter();
   const { currentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [clients, setClients] = useState<ClientDetails[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchProducts() {
       if (!currentUser) return;
       try {
-        const [clientsData, productsData] = await Promise.all([
-          supabaseService.clients.getAll(currentUser.id, currentUser.role, currentUser.companyId),
-          supabaseService.products.getAll(currentUser.id, currentUser.role, currentUser.companyId)
-        ]);
-
-        const transformedClients = clientsData.map((c: any) => ({
-          ...c,
-          clientName: c.client_name || c.clientName,
-          clientEmail: c.client_email || c.clientEmail,
-          clientCompany: c.client_company || c.clientCompany,
-          clientPhone: c.client_phone || c.clientPhone,
-          clientAddress: c.client_address || c.clientAddress,
-          clientBRN: c.client_brn || c.clientBRN,
-        }));
-        setClients(transformedClients as ClientDetails[]);
+        const productsData = await supabaseService.products.getAll(currentUser.id, currentUser.role, currentUser.companyId);
         setProducts(productsData as Product[]);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching products:", error);
       }
     }
-    fetchData();
+    fetchProducts();
   }, [currentUser]);
 
   const isOwner = !initialData || initialData.createdBy === currentUser?.id;
@@ -170,32 +155,7 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
     form.setValue(`items.${index}.total`, quantity * validUnitPrice);
   };
 
-  const handleClientSelect = (clientId: string) => {
-    if (clientId === 'new') {
-      form.reset({
-        ...form.getValues(),
-        clientId: undefined,
-        clientName: '',
-        clientCompany: '',
-        clientEmail: '',
-        clientPhone: '',
-        clientAddress: '',
-        clientBRN: '',
-      });
-      return;
-    }
 
-    const selectedClient = clients.find(c => c.id === clientId);
-    if (selectedClient) {
-      form.setValue('clientId', selectedClient.id);
-      form.setValue('clientName', selectedClient.clientName);
-      form.setValue('clientCompany', selectedClient.clientCompany || '');
-      form.setValue('clientEmail', selectedClient.clientEmail);
-      form.setValue('clientPhone', selectedClient.clientPhone || '');
-      form.setValue('clientAddress', selectedClient.clientAddress || '');
-      form.setValue('clientBRN', selectedClient.clientBRN || '');
-    }
-  };
 
   async function onSubmit(data: QuotationFormValues) {
     setIsLoading(true);
@@ -257,43 +217,6 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Client Selection</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="clientId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Select Registered Client</FormLabel>
-                  <Select onValueChange={handleClientSelect} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="-- Select a client or add new --" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="new" className="font-bold text-primary">
-                        <div className="flex items-center">
-                          <UserPlus className="mr-2 h-4 w-4" /> New Client (Manual Entry)
-                        </div>
-                      </SelectItem>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id || ''}>
-                          {client.clientName} {client.clientCompany ? `(${client.clientCompany})` : ''} - {client.clientEmail}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader>
             <CardTitle>Client Details</CardTitle>
