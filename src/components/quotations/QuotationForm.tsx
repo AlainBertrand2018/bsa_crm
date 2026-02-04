@@ -373,15 +373,25 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {products.map(product => (
-                            <SelectItem
-                              key={product.id}
-                              value={product.id}
-                              disabled={(product.inventory ?? 0) <= 0 && (!initialData || initialData.items.find(i => i.productTypeId === product.id)?.productTypeId !== product.id)}
-                            >
-                              {product.name} ({(product.inventory ?? 0) > 0 || (initialData && initialData.items.find(i => i.productTypeId === product.id)) ? `${product.inventory ?? 0} available` : 'Sold out'})
-                            </SelectItem>
-                          ))}
+                          {products.map(product => {
+                            const isPhysical = product.type === 'Physical';
+                            const hasStock = (product.inventory ?? 0) > 0;
+                            const isSelectedInEdit = initialData?.items.some(i => i.productTypeId === product.id);
+                            const isDisabled = isPhysical && !hasStock && !isSelectedInEdit;
+                            const stockLabel = isPhysical
+                              ? (hasStock || isSelectedInEdit ? `${product.inventory ?? 0} available` : 'Sold out')
+                              : 'Unlimited';
+
+                            return (
+                              <SelectItem
+                                key={product.id}
+                                value={product.id}
+                                disabled={isDisabled}
+                              >
+                                {product.name} ({stockLabel})
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                       <FormMessage />
