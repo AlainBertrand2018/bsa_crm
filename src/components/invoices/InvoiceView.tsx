@@ -155,35 +155,35 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
 
         <div className="flex justify-end mb-6">
           <div className="w-full max-w-xs space-y-2">
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>{formatCurrency(invoice.subTotal, invoice.currency)}</span>
-            </div>
-            {(invoice.discount || 0) > 0 && (
-              <div className="flex justify-between text-destructive">
-                <span>Discount:</span>
-                <span>-{formatCurrency(invoice.discount!, invoice.currency)}</span>
+            <div className="grid grid-cols-2 gap-4">
+              <span className="text-right text-muted-foreground">Subtotal:</span>
+              <span className="text-right font-medium">{formatCurrency(invoice.subTotal, invoice.currency)}</span>
+
+              {(invoice.discount || 0) > 0 && (
+                <>
+                  <span className="text-right text-destructive">Discount:</span>
+                  <span className="text-right text-destructive">-{formatCurrency(invoice.discount!, invoice.currency)}</span>
+                </>
+              )}
+
+              <span className="text-right text-muted-foreground">Amount before VAT:</span>
+              <span className="text-right font-medium">{formatCurrency(amountBeforeVat, invoice.currency)}</span>
+
+              <span className="text-right text-muted-foreground">VAT ({VAT_RATE * 100}%):</span>
+              <span className="text-right font-medium">{formatCurrency(invoice.vatAmount, invoice.currency)}</span>
+
+              <div className="col-span-2 border-t pt-2 mt-2 border-primary grid grid-cols-2 gap-4">
+                <span className="text-right font-bold text-lg">Grand Total:</span>
+                <span className="text-right font-bold text-lg">{formatCurrency(invoice.grandTotal, invoice.currency)}</span>
               </div>
-            )}
-            <div className="flex justify-between">
-              <span>Amount before VAT:</span>
-              <span>{formatCurrency(amountBeforeVat, invoice.currency)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>VAT ({VAT_RATE * 100}%):</span>
-              <span>{formatCurrency(invoice.vatAmount, invoice.currency)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 border-primary">
-              <span>Grand Total:</span>
-              <span>{formatCurrency(invoice.grandTotal, invoice.currency)}</span>
-            </div>
-            <div className="flex justify-between text-green-600 font-medium">
-              <span>Total Paid:</span>
-              <span>{formatCurrency(invoice.totalPaid || 0, invoice.currency)}</span>
-            </div>
-            <div className="flex justify-between text-destructive font-bold border-t pt-1">
-              <span>Balance Due:</span>
-              <span>{formatCurrency(Math.max(0, invoice.grandTotal - (invoice.totalPaid || 0)), invoice.currency)}</span>
+
+              <span className="text-right text-green-600 font-medium">Total Paid:</span>
+              <span className="text-right text-green-600 font-medium">{formatCurrency(invoice.totalPaid || 0, invoice.currency)}</span>
+
+              <div className="col-span-2 border-t pt-1 grid grid-cols-2 gap-4">
+                <span className="text-right text-destructive font-bold">Balance Due:</span>
+                <span className="text-right text-destructive font-bold">{formatCurrency(Math.max(0, invoice.grandTotal - (invoice.totalPaid || 0)), invoice.currency)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -195,11 +195,11 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
           </div>
         )}
       </CardContent>
-      <CardFooter className="p-6 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
-        <p className="text-xs text-muted-foreground text-center sm:text-left">
+      <CardFooter className="p-6 border-t flex flex-col gap-6">
+        <p className="text-xs text-muted-foreground text-center w-full">
           Please make payment by {formatDate(invoice.dueDate)}. <br /> All prices are in {invoice.currency}.
         </p>
-        <div className="flex gap-2">
+        <div className="flex gap-4 justify-center w-full">
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Print
           </Button>

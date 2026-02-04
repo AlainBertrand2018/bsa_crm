@@ -172,27 +172,27 @@ export function QuotationView({ quotation }: QuotationViewProps) {
 
         <div className="flex justify-end mb-6">
           <div className="w-full max-w-xs space-y-2">
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>{formatCurrency(quotation.subTotal, quotation.currency)}</span>
-            </div>
-            {(quotation.discount || 0) > 0 && (
-              <div className="flex justify-between text-destructive">
-                <span>Discount:</span>
-                <span>-{formatCurrency(quotation.discount!, quotation.currency)}</span>
+            <div className="grid grid-cols-2 gap-4">
+              <span className="text-right text-muted-foreground">Subtotal:</span>
+              <span className="text-right font-medium">{formatCurrency(quotation.subTotal, quotation.currency)}</span>
+
+              {(quotation.discount || 0) > 0 && (
+                <>
+                  <span className="text-right text-destructive">Discount:</span>
+                  <span className="text-right text-destructive">-{formatCurrency(quotation.discount!, quotation.currency)}</span>
+                </>
+              )}
+
+              <span className="text-right text-muted-foreground">Amount before VAT:</span>
+              <span className="text-right font-medium">{formatCurrency(amountBeforeVat, quotation.currency)}</span>
+
+              <span className="text-right text-muted-foreground">VAT ({VAT_RATE * 100}%):</span>
+              <span className="text-right font-medium">{formatCurrency(quotation.vatAmount, quotation.currency)}</span>
+
+              <div className="col-span-2 border-t pt-2 mt-2 border-primary grid grid-cols-2 gap-4">
+                <span className="text-right font-bold text-lg">Grand Total:</span>
+                <span className="text-right font-bold text-lg">{formatCurrency(quotation.grandTotal, quotation.currency)}</span>
               </div>
-            )}
-            <div className="flex justify-between">
-              <span>Amount before VAT:</span>
-              <span>{formatCurrency(amountBeforeVat, quotation.currency)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>VAT ({VAT_RATE * 100}%):</span>
-              <span>{formatCurrency(quotation.vatAmount, quotation.currency)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 border-primary">
-              <span>Grand Total:</span>
-              <span>{formatCurrency(quotation.grandTotal, quotation.currency)}</span>
             </div>
           </div>
         </div>
@@ -204,11 +204,11 @@ export function QuotationView({ quotation }: QuotationViewProps) {
           </div>
         )}
       </CardContent>
-      <CardFooter className="p-6 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
-        <p className="text-xs text-muted-foreground text-center sm:text-left">
+      <CardFooter className="p-6 border-t flex flex-col gap-6">
+        <p className="text-xs text-muted-foreground text-center w-full">
           Thank you for your business! <br /> All prices are in {quotation.currency}. This quotation is valid until {formatDate(quotation.expiryDate)}.
         </p>
-        <div className="flex gap-2">
+        <div className="flex gap-4 justify-center w-full">
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" /> Print
           </Button>
