@@ -67,7 +67,24 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
           supabaseService.products.getAll(currentUser.id, currentUser.role, currentUser.companyId),
           supabaseService.clients.getAll(currentUser.id, currentUser.role, currentUser.companyId)
         ]);
-        setProducts(productsData as Product[]);
+
+        // Normalize products: handle field variations and apply unlimited stock buffer for non-physical items
+        const rawProducts = productsData as any[];
+        const normalizedProducts = rawProducts.map(p => {
+          const type = p.type || 'Physical';
+          const isPhysical = type.toLowerCase() === 'physical';
+          return {
+            ...p,
+            id: p.id,
+            name: p.name,
+            type: type,
+            unitPrice: Number(p.unitPrice ?? p.unit_price ?? 0),
+            inventory: isPhysical ? Number(p.inventory ?? p.available ?? 0) : 1000,
+            bulkPrice: Number(p.bulkPrice ?? p.bulk_price ?? 0),
+            minOrder: Number(p.minOrder ?? p.min_order ?? 1),
+          };
+        });
+        setProducts(normalizedProducts as Product[]);
 
         const transformedClients = clientsData.map((c: any) => ({
           ...c,
@@ -374,7 +391,7 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
                         </FormControl>
                         <SelectContent>
                           {products.map(product => {
-                            const isPhysical = product.type === 'Physical';
+                            const isPhysical = product.type?.toLowerCase() === 'physical';
                             const hasStock = (product.inventory ?? 0) > 0;
                             const isSelectedInEdit = initialData?.items.some(i => i.productTypeId === product.id);
                             const isDisabled = isPhysical && !hasStock && !isSelectedInEdit;

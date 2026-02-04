@@ -90,7 +90,16 @@ export default function ProductsPage() {
         if (!currentUser) return;
         try {
             const data = await supabaseService.products.getAll(currentUser.id, currentUser.role, currentUser.companyId);
-            setProducts(data as Product[]);
+            const rawProducts = data as any[];
+            const normalizedProducts = rawProducts.map(p => ({
+                ...p,
+                unitPrice: p.unitPrice ?? p.unit_price ?? 0,
+                bulkPrice: p.bulkPrice ?? p.bulk_price ?? 0,
+                minOrder: p.minOrder ?? p.min_order ?? 1,
+                inventory: p.inventory ?? p.available ?? 0,
+                type: p.type || 'Physical'
+            }));
+            setProducts(normalizedProducts as Product[]);
         } catch (error) {
             console.error("Error fetching products:", error);
         } finally {
@@ -374,9 +383,9 @@ export default function ProductsPage() {
                                         </TableCell>
                                         <TableCell className="text-right">{formatCurrency(product.unitPrice)}</TableCell>
                                         <TableCell className="text-right">
-                                            {product.type === "Physical" ? (
+                                            {product.type?.toLowerCase() === "physical" ? (
                                                 <Badge variant={(product.inventory ?? 0) > 10 ? "secondary" : "destructive"}>
-                                                    {product.inventory ?? product.available ?? 0} in stock
+                                                    {product.inventory ?? 0} in stock
                                                 </Badge>
                                             ) : (
                                                 <Badge variant="secondary">Unlimited</Badge>
