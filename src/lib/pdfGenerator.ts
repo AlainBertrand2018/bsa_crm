@@ -91,25 +91,33 @@ const addClientDetails = (doc: jsPDF, yPos: number, document: Quotation | Invoic
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(70, 70, 70);
   let currentY = yPos + 6;
-  doc.text(String(document.clientName || 'N/A'), 14, currentY);
+
+  const clientName = document.clientName || 'Valued Client';
+  doc.text(String(clientName), 14, currentY);
   currentY += 5;
-  if (document.clientCompany) {
+
+  if (document.clientCompany && document.clientCompany !== 'undefined') {
     doc.text(String(document.clientCompany), 14, currentY);
     currentY += 5;
   }
-  doc.text(`Email: ${document.clientEmail}`, 14, currentY);
-  currentY += 5;
-  if (document.clientPhone) {
+
+  if (document.clientEmail && document.clientEmail !== 'undefined') {
+    doc.text(`Email: ${document.clientEmail}`, 14, currentY);
+    currentY += 5;
+  }
+
+  if (document.clientPhone && document.clientPhone !== 'undefined') {
     doc.text(`Phone: ${document.clientPhone}`, 14, currentY);
     currentY += 5;
   }
-  if (document.clientAddress) {
-    // Handle multi-line address if necessary
+
+  if (document.clientAddress && document.clientAddress !== 'undefined') {
     const addressLines = doc.splitTextToSize(document.clientAddress, doc.internal.pageSize.getWidth() / 2 - 28);
     doc.text(addressLines, 14, currentY);
     currentY += (addressLines.length * 5);
   }
-  if (document.clientBRN) {
+
+  if (document.clientBRN && document.clientBRN !== 'undefined') {
     doc.text(`BRN: ${document.clientBRN}`, 14, currentY);
     currentY += 5;
   }

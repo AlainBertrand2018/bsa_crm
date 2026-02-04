@@ -263,15 +263,24 @@ export const supabaseService = {
                 console.log(`[Shim] Auto-generating invoice for quotation ${quotationId}`);
 
                 // 2. Map quotation to invoice
+                const isNaoNA = (val: any) => !val || val === 'N/A' || val === 'undefined';
+
+                const clientName = !isNaoNA(q.clientName) ? q.clientName : (!isNaoNA(q.client_name) ? q.client_name : q.clients?.client_name);
+                const clientEmail = !isNaoNA(q.clientEmail) ? q.clientEmail : (!isNaoNA(q.client_email) ? q.client_email : q.clients?.client_email);
+                const clientCompany = !isNaoNA(q.clientCompany) ? q.clientCompany : (!isNaoNA(q.client_company) ? q.client_company : q.clients?.client_company);
+                const clientPhone = !isNaoNA(q.clientPhone) ? q.clientPhone : (!isNaoNA(q.client_phone) ? q.client_phone : (q.clients?.client_phone || ''));
+                const clientAddress = !isNaoNA(q.clientAddress) ? q.clientAddress : (!isNaoNA(q.client_address) ? q.client_address : (q.clients?.client_address || ''));
+                const clientBRN = !isNaoNA(q.clientBRN) ? q.clientBRN : (!isNaoNA(q.client_brn) ? q.client_brn : (q.clients?.client_brn || ''));
+
                 const invoiceData = {
                     clientId: q.clientId || q.client_id || '',
                     quotationId: q.id || quotationId,
-                    clientName: q.clientName || q.client_name,
-                    clientCompany: q.clientCompany || q.client_company,
-                    clientEmail: q.clientEmail || q.client_email,
-                    clientPhone: q.clientPhone || q.client_phone || '',
-                    clientAddress: q.clientAddress || q.client_address || '',
-                    clientBRN: q.clientBRN || q.client_brn || '',
+                    clientName,
+                    clientCompany,
+                    clientEmail,
+                    clientPhone,
+                    clientAddress,
+                    clientBRN,
                     items: q.items || [],
                     subTotal: q.subTotal || q.sub_total || 0,
                     discount: q.discount || 0,
@@ -336,6 +345,24 @@ export const supabaseService = {
         getById: async (id: string) => {
             const i: any = await invoicesService.getById(id);
             if (!i) return null;
+
+            // Fetch client details as well for the 'clients(*)' join simulator
+            let clientData = null;
+            const clientId = i.clientId || i.client_id;
+            if (clientId) {
+                const c: any = await clientsService.getById(clientId);
+                if (c) {
+                    clientData = {
+                        client_name: c.clientName,
+                        client_email: c.clientEmail,
+                        client_company: c.clientCompany,
+                        client_phone: c.clientPhone,
+                        client_address: c.clientAddress,
+                        client_brn: c.clientBRN
+                    };
+                }
+            }
+
             return {
                 ...i,
                 user_id: i.createdBy,
@@ -345,7 +372,8 @@ export const supabaseService = {
                 sub_total: i.subTotal,
                 vat_amount: i.vatAmount,
                 grand_total: i.grandTotal,
-                total_paid: i.totalPaid || 0
+                total_paid: i.totalPaid || 0,
+                clients: clientData
             };
         },
         delete: async (id: string) => {
