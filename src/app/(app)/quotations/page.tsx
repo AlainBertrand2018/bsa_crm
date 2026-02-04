@@ -63,59 +63,10 @@ export default function QuotationsListPage() {
 
       toast({
         title: "Status Updated",
-        description: `Quotation ${id} status changed to ${status}.`,
+        description: `Quotation ${id} status changed to ${status}. ${status === 'Won' ? 'An invoice has been auto-generated.' : ''}`,
       });
 
-      if (status === 'Won') {
-        // AUTOMATIC INVOICE GENERATION
-        try {
-          const quotationToConvert = quotations.find(q => q.id === id);
-          if (quotationToConvert) {
-            const invoiceData = {
-              clientId: quotationToConvert.clientId || '',
-              quotationId: quotationToConvert.id,
-              clientName: quotationToConvert.clientName,
-              clientCompany: quotationToConvert.clientCompany,
-              clientEmail: quotationToConvert.clientEmail,
-              clientPhone: quotationToConvert.clientPhone || '',
-              clientAddress: quotationToConvert.clientAddress || '',
-              clientBRN: quotationToConvert.clientBRN || '',
-              items: quotationToConvert.items,
-              subTotal: quotationToConvert.subTotal,
-              discount: quotationToConvert.discount || 0,
-              vatAmount: quotationToConvert.vatAmount,
-              grandTotal: quotationToConvert.grandTotal,
-              currency: quotationToConvert.currency,
-              notes: `Generated from Quotation ${quotationToConvert.id}`,
-              status: 'To Send', // Default invoice status
-              totalPaid: 0,
-              invoiceDate: new Date().toISOString(),
-              dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 days
-              createdBy: currentUser?.id,
-              companyId: currentUser?.companyId,
-            };
 
-            await supabaseService.invoices.create(invoiceData as any);
-
-            toast({
-              title: "Invoice Generated",
-              description: `An invoice has been automatically created for Quotation ${id}.`,
-              duration: 5000,
-              action: <Button variant="outline" size="sm" onClick={() => router.push('/invoices')}>View Invoices</Button>
-            });
-            return; // Exit early as we handled the success toast here
-          }
-        } catch (err) {
-          console.error("Error auto-generating invoice:", err);
-          // Fallthrough to standard success message but warn about invoice failure?
-          // Or just log it. For now, we continue to show the status update success.
-        }
-      }
-
-      toast({
-        title: "Status Updated",
-        description: `Quotation ${id} status changed to ${status}.`,
-      });
     } catch (error) {
       toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
     }

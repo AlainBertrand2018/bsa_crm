@@ -215,6 +215,7 @@ The Team at ${businessName}
         payment_method: paymentMethod,
         date: new Date().toISOString(),
         client_name: paymentInvoice.clientName,
+        client_company: paymentInvoice.clientCompany,
         user_id: currentUser?.id,
         companyId: currentUser?.companyId,
       });

@@ -15,8 +15,9 @@ export function formatDate(dateString: string | Date, dateFormat: string = 'PP')
   }
 }
 
-export function formatCurrency(amount: number, currency: string = 'MUR'): string {
-  return new Intl.NumberFormat('en-MU', { style: 'currency', currency: currency }).format(amount);
+export function formatCurrency(amount: number | undefined | null, currency: string = 'MUR'): string {
+  const safeAmount = (amount === undefined || amount === null || isNaN(amount)) ? 0 : amount;
+  return new Intl.NumberFormat('en-MU', { style: 'currency', currency: currency || 'MUR' }).format(safeAmount);
 }
 
 // Placeholder for ID generation. In a real app, this would be more robust and likely DB-driven.

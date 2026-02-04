@@ -18,12 +18,12 @@ const addDocumentHeader = (
   document: any,
   businessDetails?: BusinessDetails
 ) => {
-  const name = businessDetails?.businessName || COMPANY_DETAILS.name;
-  const brn = businessDetails?.brn || COMPANY_DETAILS.brn;
+  const name = String(businessDetails?.businessName || COMPANY_DETAILS.name || 'N/A');
+  const brn = String(businessDetails?.brn || COMPANY_DETAILS.brn || 'N/A');
   const vat = businessDetails?.vatNo || COMPANY_DETAILS.vat;
-  const address = businessDetails?.businessAddress || COMPANY_DETAILS.address;
-  const tel = businessDetails?.telephone || COMPANY_DETAILS.tel;
-  const email = businessDetails?.email || COMPANY_DETAILS.email;
+  const address = String(businessDetails?.businessAddress || COMPANY_DETAILS.address || 'N/A');
+  const tel = String(businessDetails?.telephone || COMPANY_DETAILS.tel || 'N/A');
+  const email = String(businessDetails?.email || COMPANY_DETAILS.email || 'N/A');
   const website = businessDetails?.website || COMPANY_DETAILS.url;
 
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -91,10 +91,10 @@ const addClientDetails = (doc: jsPDF, yPos: number, document: Quotation | Invoic
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(70, 70, 70);
   let currentY = yPos + 6;
-  doc.text(document.clientName, 14, currentY);
+  doc.text(String(document.clientName || 'N/A'), 14, currentY);
   currentY += 5;
   if (document.clientCompany) {
-    doc.text(document.clientCompany, 14, currentY);
+    doc.text(String(document.clientCompany), 14, currentY);
     currentY += 5;
   }
   doc.text(`Email: ${document.clientEmail}`, 14, currentY);
@@ -270,9 +270,9 @@ export const generateReceiptPdf = (
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(70, 70, 70);
-  doc.text(receipt.clientName, 14, yPos + 6);
+  doc.text(String(receipt.clientName || 'N/A'), 14, yPos + 6);
   if (receipt.clientCompany) {
-    doc.text(receipt.clientCompany, 14, yPos + 11);
+    doc.text(String(receipt.clientCompany), 14, yPos + 11);
   }
 
   yPos += 25;
@@ -333,8 +333,8 @@ export const generateStatementPdf = (
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(70, 70, 70);
-  doc.text(statement.clientName, 14, yPos + 6);
-  if (statement.clientEmail) doc.text(statement.clientEmail, 14, yPos + 11);
+  doc.text(String(statement.clientName || 'N/A'), 14, yPos + 6);
+  if (statement.clientEmail) doc.text(String(statement.clientEmail), 14, yPos + 11);
   doc.text(`Period: ${statement.period || 'All Time'}`, 14, yPos + 16);
 
   yPos += 25;

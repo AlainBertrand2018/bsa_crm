@@ -122,6 +122,7 @@ export default function UsersPage() {
                                 <TableHead className="pl-6">Name</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Role</TableHead>
+                                <TableHead>Business</TableHead>
                                 <TableHead>Onboarding</TableHead>
                                 <TableHead className="text-right pr-6">Actions</TableHead>
                             </TableRow>
@@ -154,6 +155,9 @@ export default function UsersPage() {
                                             <Badge variant={user.role === 'Super Admin' ? 'default' : user.role === 'Admin' ? 'secondary' : 'outline'}>
                                                 {user.role}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm font-medium">{user.businessName || 'N/A'}</span>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant={user.onboardingCompleted ? 'success' as any : 'warning' as any}>

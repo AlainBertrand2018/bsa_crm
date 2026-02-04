@@ -147,7 +147,10 @@ export const onboardingService = {
         // 3. Mark user as onboarding completed and save business details
         await firestore.setDoc(firestore.doc(db, "users", userId), {
             onboardingCompleted: true,
+            onboarding: 'True', // Explicit string flag as requested
+            businessName: businessData.businessName,
             businessDetails: cleanData(businessData),
+            products: products.map(p => cleanData(p)),
             updatedAt: firestore.serverTimestamp()
         }, { merge: true });
     }

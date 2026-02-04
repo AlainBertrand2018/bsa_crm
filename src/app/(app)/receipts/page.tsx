@@ -44,6 +44,7 @@ export default function ReceiptsPage() {
             const transformedData = data.map((r: any) => ({
                 ...r,
                 clientName: r.client_name || r.clientName,
+                clientCompany: r.client_company || r.clientCompany,
                 paymentMethod: r.payment_method || r.paymentMethod,
                 createdBy: r.user_id || r.createdBy
             }));
@@ -134,11 +135,6 @@ export default function ReceiptsPage() {
             <PageHeader
                 title="Receipts"
                 description="View and manage transaction receipts."
-                actions={
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" /> New Receipt
-                    </Button>
-                }
             />
             <Card>
                 <CardContent className="p-0">

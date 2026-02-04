@@ -52,7 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role,
             companyId: userData.companyId,
             onboardingCompleted: (role === 'Super Admin' || role === 'Admin') ? true : userData.onboardingCompleted === true,
+            businessName: userData.businessName,
             businessDetails: userData.businessDetails,
+            products: userData.products,
           });
 
           setIsLoading(false);
@@ -147,7 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role,
           companyId: userData.companyId,
           onboardingCompleted: (role === 'Super Admin' || role === 'Admin') ? true : userData.onboardingCompleted === true,
+          businessName: userData.businessName,
           businessDetails: userData.businessDetails,
+          products: userData.products,
         });
       }
     } catch (error) {

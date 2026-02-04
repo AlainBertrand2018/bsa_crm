@@ -1,4 +1,4 @@
-
+import { where } from 'firebase/firestore';
 import {
     quotationsService,
     invoicesService,
@@ -180,6 +180,13 @@ export const supabaseService = {
                 createdBy: quotation.user_id || quotation.createdBy
             };
             const docRef = await quotationsService.create(firestoreQuotation as any);
+
+            if (firestoreQuotation.status === 'Won') {
+                // Auto-generate invoice
+                const fullQuotation = { id: docRef.id, ...firestoreQuotation };
+                await (supabaseService.quotations as any)._autoGenerateInvoice(docRef.id, fullQuotation);
+            }
+
             return { id: docRef.id, ...firestoreQuotation };
         },
         getById: async (id: string) => {
@@ -218,7 +225,61 @@ export const supabaseService = {
         update: async (id: string, updates: any) => {
             console.log(`[Shim] quotations.update(${id})`, updates);
             await quotationsService.update(id, updates);
+
+            if (updates.status === 'Won') {
+                // Auto-generate invoice. We need full quotation data
+                const fullQuotation = await supabaseService.quotations.getById(id);
+                if (fullQuotation) {
+                    await (supabaseService.quotations as any)._autoGenerateInvoice(id, fullQuotation);
+                }
+            }
+
             return { id, ...updates };
+        },
+        _autoGenerateInvoice: async (quotationId: string, q: any) => {
+            try {
+                // 1. Check if invoice already exists for this quotation
+                const existing = await getDocuments("invoices", [
+                    where("quotationId", "==", quotationId)
+                ]);
+
+                if (existing.length > 0) {
+                    console.log(`[Shim] Invoice already exists for quotation ${quotationId}, skipping auto-generation.`);
+                    return;
+                }
+
+                console.log(`[Shim] Auto-generating invoice for quotation ${quotationId}`);
+
+                // 2. Map quotation to invoice
+                const invoiceData = {
+                    clientId: q.clientId || q.client_id || '',
+                    quotationId: q.id || quotationId,
+                    clientName: q.clientName || q.client_name,
+                    clientCompany: q.clientCompany || q.client_company,
+                    clientEmail: q.clientEmail || q.client_email,
+                    clientPhone: q.clientPhone || q.client_phone || '',
+                    clientAddress: q.clientAddress || q.client_address || '',
+                    clientBRN: q.clientBRN || q.client_brn || '',
+                    items: q.items || [],
+                    subTotal: q.subTotal || q.sub_total || 0,
+                    discount: q.discount || 0,
+                    vatAmount: q.vatAmount || q.vat_amount || 0,
+                    grandTotal: q.grandTotal || q.grand_total || 0,
+                    currency: q.currency || 'MUR',
+                    notes: `Generated from Quotation ${q.id || quotationId}`,
+                    status: 'To Send',
+                    totalPaid: 0,
+                    invoiceDate: new Date().toISOString(),
+                    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    createdBy: q.createdBy || q.user_id,
+                    companyId: q.companyId || q.company_id,
+                };
+
+                await supabaseService.invoices.create(invoiceData);
+                console.log(`[Shim] Successfully auto-generated invoice for quotation ${quotationId}`);
+            } catch (error) {
+                console.error(`[Shim] Error in _autoGenerateInvoice:`, error);
+            }
         },
         delete: async (id: string) => {
             await quotationsService.delete(id);

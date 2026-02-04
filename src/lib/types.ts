@@ -11,7 +11,6 @@ export interface ClientDetails {
   clientBRN?: string;
   companyId?: string;
   createdBy?: string;
-  createdAt?: string;
 }
 
 export interface DocumentItem {
@@ -99,7 +98,9 @@ export interface User {
   role: 'Super Admin' | 'Admin' | 'User';
   companyId?: string;
   onboardingCompleted?: boolean;
+  businessName?: string;
   businessDetails?: BusinessDetails;
+  products?: OnboardingProduct[];
 }
 
 export type Product = OnboardingProduct;
@@ -111,6 +112,7 @@ export interface Receipt {
   amount: number;
   paymentMethod: string;
   clientName: string;
+  clientCompany?: string;
   status: ReceiptStatus;
   companyId?: string;
   createdBy: string;
