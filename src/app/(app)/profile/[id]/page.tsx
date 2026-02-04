@@ -14,6 +14,11 @@ import { FullPageLoading } from '@/components/shared/LoadingSpinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { Edit2, Save, X } from 'lucide-react';
 
 export default function UserProfilePage() {
     const params = useParams();
@@ -25,6 +30,10 @@ export default function UserProfilePage() {
     const [business, setBusiness] = useState<BusinessDetails | null>(null);
     const [products, setProducts] = useState<OnboardingProduct[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [editData, setEditData] = useState<Partial<BusinessDetails>>({});
+    const { toast } = useToast();
 
     useEffect(() => {
         if (!authLoading && currentUser) {
@@ -48,12 +57,51 @@ export default function UserProfilePage() {
                         setUser(userData as User);
                         setBusiness(businessData as BusinessDetails);
                         setProducts(productsData as OnboardingProduct[]);
+                        if (businessData) {
+                            setEditData(businessData as BusinessDetails);
+                        }
                     }
                 })
                 .catch(console.error)
                 .finally(() => setIsLoading(false));
         }
     }, [id]);
+
+    const handleSaveBusiness = async () => {
+        if (!id) return;
+        setIsSaving(true);
+        try {
+            // Update in both locations for consistency
+            await usersService.updateBusinessDetails(id, editData as BusinessDetails);
+
+            // Trigger a silent update on the user doc too
+            await usersService.update(id, {
+                businessDetails: editData,
+                businessName: editData.businessName,
+                onboardingCompleted: true // Ensure they are marked as onboarded if they save this
+            });
+
+            setBusiness(prev => ({ ...prev, ...editData } as BusinessDetails));
+            setIsEditing(false);
+            toast({
+                title: "Business Details Updated",
+                description: "Your document headers will now reflect these changes.",
+            });
+            // Refresh currentUser if the user is viewing their own profile
+            if (currentUser?.id === id) {
+                // We'll let the listener handle it or we could call refreshUser
+            }
+        } catch (error) {
+            console.error("Error updating business:", error);
+            toast({
+                title: "Error",
+                description: "Failed to save business details.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     if (isLoading) {
         return <FullPageLoading message="Loading profile..." />;
@@ -130,92 +178,146 @@ export default function UserProfilePage() {
                     {business ? (
                         <Card className="shadow-lg">
                             <CardHeader className="bg-muted/30">
-                                <CardTitle className="flex items-center gap-2">
-                                    <Building2 className="h-6 w-6 text-primary" />
-                                    Business Information
+                                <CardTitle className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <Building2 className="h-6 w-6 text-primary" />
+                                        Business Information
+                                    </div>
+                                    {(currentUser?.role === 'Super Admin' || currentUser?.id === id) && !isEditing && (
+                                        <Button variant="outline" size="sm" onClick={() => {
+                                            setEditData(business || {
+                                                businessName: '',
+                                                businessAddress: '',
+                                                brn: '',
+                                                telephone: '',
+                                                position: '',
+                                                email: user.email || ''
+                                            });
+                                            setIsEditing(true);
+                                        }}>
+                                            <Edit2 className="h-4 w-4 mr-2" /> Edit Details
+                                        </Button>
+                                    )}
                                 </CardTitle>
-                                <CardDescription>Details captured during onboarding.</CardDescription>
+                                <CardDescription>This information appears on your quotations and invoices.</CardDescription>
                             </CardHeader>
                             <CardContent className="p-6 md:p-8">
-                                <div className="grid md:grid-cols-2 gap-y-8 gap-x-12">
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Business Name</p>
-                                        <p className="text-lg font-semibold">{business.businessName}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">BRN</p>
-                                        <p className="text-lg font-semibold">{business.brn}</p>
-                                    </div>
-
-                                    <div className="md:col-span-2 space-y-1">
-                                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Address</p>
-                                        <div className="flex items-start gap-2 pt-1 text-foreground/90">
-                                            <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                                            <p className="text-base whitespace-pre-wrap">{business.businessAddress}</p>
+                                {isEditing ? (
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <Label>Business Name</Label>
+                                            <Input
+                                                value={editData.businessName || ''}
+                                                onChange={e => setEditData({ ...editData, businessName: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>BRN</Label>
+                                            <Input
+                                                value={editData.brn || ''}
+                                                onChange={e => setEditData({ ...editData, brn: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-2">
+                                            <Label>Address</Label>
+                                            <Textarea
+                                                value={editData.businessAddress || ''}
+                                                onChange={e => setEditData({ ...editData, businessAddress: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Position</Label>
+                                            <Input
+                                                value={editData.position || ''}
+                                                onChange={e => setEditData({ ...editData, position: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Email</Label>
+                                            <Input
+                                                value={editData.email || ''}
+                                                onChange={e => setEditData({ ...editData, email: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Telephone</Label>
+                                            <Input
+                                                value={editData.telephone || ''}
+                                                onChange={e => setEditData({ ...editData, telephone: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>VAT Number (Optional)</Label>
+                                            <Input
+                                                value={editData.vatNo || ''}
+                                                onChange={e => setEditData({ ...editData, vatNo: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 flex justify-end gap-2 pt-4">
+                                            <Button variant="ghost" onClick={() => setIsEditing(false)} disabled={isSaving}>
+                                                <X className="mr-2 h-4 w-4" /> Cancel
+                                            </Button>
+                                            <Button onClick={handleSaveBusiness} disabled={isSaving}>
+                                                <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Saving...' : 'Save Changes'}
+                                            </Button>
                                         </div>
                                     </div>
-
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Position</p>
-                                        <p className="text-base font-medium">{business.position}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Business email</p>
-                                        <div className="flex items-center gap-2 text-base">
-                                            <Mail className="h-4 w-4 text-primary" />
-                                            {business.email}
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Telephone</p>
-                                        <div className="flex items-center gap-2 text-base">
-                                            <Phone className="h-4 w-4 text-primary" />
-                                            {business.telephone}
-                                        </div>
-                                    </div>
-                                    {business.mobilePhone && (
+                                ) : (
+                                    <div className="grid md:grid-cols-2 gap-y-8 gap-x-12">
                                         <div className="space-y-1">
-                                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Mobile</p>
+                                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Business Name</p>
+                                            <p className="text-lg font-semibold">{business.businessName}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">BRN</p>
+                                            <p className="text-lg font-semibold">{business.brn}</p>
+                                        </div>
+
+                                        <div className="md:col-span-2 space-y-1">
+                                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Address</p>
+                                            <div className="flex items-start gap-2 pt-1 text-foreground/90">
+                                                <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                                                <p className="text-base whitespace-pre-wrap">{business.businessAddress}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Position</p>
+                                            <p className="text-base font-medium">{business.position}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Business email</p>
+                                            <div className="flex items-center gap-2 text-base">
+                                                <Mail className="h-4 w-4 text-primary" />
+                                                {business.email}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Telephone</p>
                                             <div className="flex items-center gap-2 text-base">
                                                 <Phone className="h-4 w-4 text-primary" />
-                                                {business.mobilePhone}
+                                                {business.telephone}
                                             </div>
                                         </div>
-                                    )}
-
-                                    {(business.website || business.whatsapp || business.facebookPage) && (
-                                        <div className="md:col-span-2 pt-4 border-t space-y-4">
-                                            <p className="text-sm font-bold text-primary">Links & Social Presence</p>
-                                            <div className="grid md:grid-cols-3 gap-4">
-                                                {business.website && (
-                                                    <div className="flex items-center gap-2 text-sm bg-muted/40 p-3 rounded-lg">
-                                                        <Globe className="h-4 w-4 text-primary" />
-                                                        <span className="truncate">{business.website}</span>
-                                                    </div>
-                                                )}
-                                                {business.whatsapp && (
-                                                    <div className="flex items-center gap-2 text-sm bg-muted/40 p-3 rounded-lg">
-                                                        <Phone className="h-4 w-4 text-green-600" />
-                                                        <span className="truncate">{business.whatsapp}</span>
-                                                    </div>
-                                                )}
-                                                {business.facebookPage && (
-                                                    <div className="flex items-center gap-2 text-sm bg-muted/40 p-3 rounded-lg">
-                                                        <span className="h-4 w-4 flex items-center justify-center bg-blue-600 text-white rounded-sm text-[10px] font-bold">f</span>
-                                                        <span className="truncate">{business.facebookPage}</span>
-                                                    </div>
-                                                )}
-                                            </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">VAT Number</p>
+                                            <p className="text-base font-medium">{business.vatNo || 'N/A'}</p>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     ) : (
-                        <Card className="p-12 text-center shadow-md border-dashed border-2">
-                            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                            <p className="text-muted-foreground">This user has not completed business registration yet.</p>
+                        <Card className="p-12 text-center shadow-lg border-dashed border-2 bg-muted/20">
+                            <Building2 className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-40" />
+                            <h3 className="text-xl font-bold mb-2">No Business Profile</h3>
+                            <p className="text-muted-foreground mb-6 max-w-sm mx-auto">This account hasn't established a business profile yet. Document headers will use default system values.</p>
+                            {(currentUser?.role === 'Super Admin' || currentUser?.id === id) && (
+                                <Button onClick={() => setIsEditing(true)}>
+                                    <Plus className="mr-2 h-4 w-4" /> Initialize Business Details
+                                </Button>
+                            )}
                         </Card>
                     )}
 
