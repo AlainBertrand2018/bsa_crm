@@ -137,11 +137,11 @@ export default function ProductsPage() {
                 name: values.name,
                 type: values.type,
                 description: values.description,
-                unit_price: values.unitPrice,
-                bulk_price: values.bulkPrice,
-                min_order: values.minOrder,
+                unitPrice: values.unitPrice,
+                bulkPrice: values.bulkPrice,
+                minOrder: values.minOrder,
                 inventory: values.inventory,
-                user_id: currentUser.id,
+                userId: currentUser.id,
                 companyId: currentUser.companyId,
                 rrp: values.unitPrice * 1.2, // Default RRP
             });

@@ -81,7 +81,7 @@ export default function ClientsPage() {
         try {
             await supabaseService.clients.create({
                 ...data,
-                user_id: currentUser.id,
+                userId: currentUser.id,
                 companyId: currentUser.companyId,
             });
             toast({

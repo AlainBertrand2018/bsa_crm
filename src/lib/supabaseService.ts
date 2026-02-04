@@ -82,7 +82,8 @@ export const supabaseService = {
                 clientPhone: client.client_phone || client.clientPhone,
                 clientAddress: client.client_address || client.clientAddress,
                 clientBRN: client.client_brn || client.clientBRN,
-                createdBy: client.user_id || client.createdBy
+                createdBy: client.userId || client.user_id || client.createdBy,
+                companyId: client.companyId || client.company_id
             };
             const docRef = await clientsService.create(firestoreClient as any);
             return { id: docRef.id, ...firestoreClient };
@@ -126,8 +127,16 @@ export const supabaseService = {
         },
         create: async (product: any) => {
             console.log(`[Shim] products.create()`, product);
-            const docRef = await productsService.create(product);
-            return { id: docRef.id, ...product };
+            const firestoreProduct = {
+                ...product,
+                unitPrice: product.unit_price || product.unitPrice,
+                bulkPrice: product.bulk_price || product.bulkPrice,
+                minOrder: product.min_order || product.minOrder,
+                userId: product.userId || product.user_id || product.createdBy,
+                companyId: product.companyId || product.company_id
+            };
+            const docRef = await productsService.create(firestoreProduct);
+            return { id: docRef.id, ...firestoreProduct };
         },
         getById: async (id: string) => {
             const data = await getDocument('user_products', id);
@@ -232,8 +241,19 @@ export const supabaseService = {
             }));
         },
         create: async (invoice: any) => {
-            const docRef = await invoicesService.create(invoice);
-            return { id: docRef.id, ...invoice };
+            const firestoreInvoice = {
+                ...invoice,
+                invoiceDate: invoice.invoice_date || invoice.invoiceDate,
+                dueDate: invoice.due_date || invoice.dueDate,
+                subTotal: invoice.sub_total || invoice.subTotal,
+                vatAmount: invoice.vat_amount || invoice.vatAmount,
+                grandTotal: invoice.grand_total || invoice.grandTotal,
+                clientId: invoice.client_id || invoice.clientId,
+                createdBy: invoice.userId || invoice.user_id || invoice.createdBy,
+                companyId: invoice.companyId || invoice.company_id
+            };
+            const docRef = await invoicesService.create(firestoreInvoice);
+            return { id: docRef.id, ...firestoreInvoice };
         },
         update: async (id: string, updates: any) => {
             await invoicesService.update(id, updates);
@@ -265,8 +285,13 @@ export const supabaseService = {
             return data;
         },
         create: async (receipt: any) => {
-            const docRef = await receiptsService.create(receipt);
-            return { id: docRef.id, ...receipt };
+            const firestoreReceipt = {
+                ...receipt,
+                createdBy: receipt.userId || receipt.user_id || receipt.createdBy,
+                companyId: receipt.companyId || receipt.company_id
+            };
+            const docRef = await receiptsService.create(firestoreReceipt);
+            return { id: docRef.id, ...firestoreReceipt };
         },
         getById: async (id: string) => {
             return await getDocument('receipts', id);
@@ -287,8 +312,13 @@ export const supabaseService = {
             return data;
         },
         create: async (statement: any) => {
-            const docRef = await statementsService.create(statement);
-            return { id: docRef.id, ...statement };
+            const firestoreStatement = {
+                ...statement,
+                createdBy: statement.userId || statement.user_id || statement.createdBy,
+                companyId: statement.companyId || statement.company_id
+            };
+            const docRef = await statementsService.create(firestoreStatement);
+            return { id: docRef.id, ...firestoreStatement };
         },
         getById: async (id: string) => {
             return await getDocument('statements', id);

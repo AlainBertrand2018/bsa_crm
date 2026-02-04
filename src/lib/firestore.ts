@@ -3,10 +3,22 @@ import * as firestore from "firebase/firestore";
 import { db } from "./firebase";
 import { Quotation, Invoice, ClientDetails, BusinessDetails, OnboardingProduct } from "./types";
 
+// Helper to remove undefined values from objects (Firestore doesn't allow them)
+const cleanData = (data: any) => {
+    const cleaned = { ...data };
+    Object.keys(cleaned).forEach(key => {
+        if (cleaned[key] === undefined) {
+            delete cleaned[key];
+        }
+    });
+    return cleaned;
+};
+
 // Generic CRUD helpers
 export const addDocument = async (collectionName: string, data: any) => {
+    const cleanedData = cleanData(data);
     return await firestore.addDoc(firestore.collection(db, collectionName), {
-        ...data,
+        ...cleanedData,
         createdAt: firestore.serverTimestamp(),
     });
 };
@@ -38,10 +50,20 @@ export const getDocuments = async (collectionName: string, constraints: firestor
 
 export const updateDocument = async (collectionName: string, id: string, data: any) => {
     const docRef = firestore.doc(db, collectionName, id);
+    const cleanedData = cleanData(data);
     await firestore.updateDoc(docRef, {
-        ...data,
+        ...cleanedData,
         updatedAt: firestore.serverTimestamp(),
     });
+};
+
+export const setDocument = async (collectionName: string, id: string, data: any, options: firestore.SetOptions = {}) => {
+    const docRef = firestore.doc(db, collectionName, id);
+    const cleanedData = cleanData(data);
+    await firestore.setDoc(docRef, {
+        ...cleanedData,
+        createdAt: firestore.serverTimestamp(),
+    }, options);
 };
 
 export const deleteDocument = async (collectionName: string, id: string) => {
@@ -109,26 +131,23 @@ export const onboardingService = {
         console.log("Completing onboarding for user:", userId);
 
         // 1. Create business profile
-        await firestore.setDoc(firestore.doc(db, "businesses", userId), {
+        await setDocument("businesses", userId, {
             ...businessData,
             userId,
-            createdAt: firestore.serverTimestamp(),
         });
 
         // 2. Create products
-        const productsCollection = firestore.collection(db, "user_products");
         for (const product of products) {
-            await firestore.addDoc(productsCollection, {
+            await addDocument("user_products", {
                 ...product,
                 userId,
-                createdAt: firestore.serverTimestamp(),
             });
         }
 
         // 3. Mark user as onboarding completed and save business details
         await firestore.setDoc(firestore.doc(db, "users", userId), {
             onboardingCompleted: true,
-            businessDetails: businessData,
+            businessDetails: cleanData(businessData),
             updatedAt: firestore.serverTimestamp()
         }, { merge: true });
     }
