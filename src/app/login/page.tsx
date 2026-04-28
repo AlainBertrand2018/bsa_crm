@@ -54,9 +54,10 @@ export default function LoginPage() {
         });
         router.push('/dashboard');
       } else {
+        console.error("Login Error Details:", result.error);
         toast({
           title: "Login Failed",
-          description: result.error || "Invalid email or password. Please try again.",
+          description: result.error?.message || result.error || "Invalid email or password. Please try again.",
           variant: "destructive",
         });
       }

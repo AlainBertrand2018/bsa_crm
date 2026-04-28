@@ -15,6 +15,32 @@ export function formatDate(dateString: string | Date, dateFormat: string = 'PP')
   }
 }
 
+export function calculateTotals(items: any[], vatRate: number = 0.15, discount: number = 0) {
+  const subTotal = (items || []).reduce((sum, item) => {
+    // Try to get quantity from various common names
+    const qty = Number(item.quantity ?? item.qty ?? 0);
+    
+    // Try to get unit price from various common names
+    const price = Number(item.unitPrice ?? item.unit_price ?? item.price ?? item.rate ?? 0);
+    
+    let itemTotal = qty * price;
+    
+    // Fallback to item.total if the above calculation resulted in 0 but a total exists
+    if (itemTotal === 0 && item.total) {
+      itemTotal = Number(item.total) || 0;
+    }
+    
+    return sum + itemTotal;
+  }, 0);
+  
+  const discountAmount = Number(discount) || 0;
+  const amountBeforeVat = Math.max(0, subTotal - discountAmount);
+  const vatAmount = amountBeforeVat * vatRate;
+  const grandTotal = amountBeforeVat + vatAmount;
+  
+  return { subTotal, vatAmount, grandTotal, amountBeforeVat, discountAmount };
+}
+
 const formatterCache = new Map<string, Intl.NumberFormat>();
 
 export function formatCurrency(amount: number | undefined | null, currency: string = 'MUR'): string {

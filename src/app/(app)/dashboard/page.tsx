@@ -9,7 +9,8 @@ import Link from 'next/link';
 import type { Quotation, Invoice, ClientDetails, Product } from '@/lib/types';
 import { quotationsService, invoicesService, clientsService, productsService } from '@/lib/firestore';
 import { useAuth } from '@/context/AuthContext';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, calculateTotals } from '@/lib/utils';
+import { VAT_RATE } from '@/lib/constants';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
@@ -64,9 +65,9 @@ export default function DashboardPage() {
       };
     }
     return {
-      totalQuotationsValue: quotations.reduce((sum, q) => sum + q.grandTotal, 0),
+      totalQuotationsValue: quotations.reduce((sum, q) => sum + calculateTotals(q.items || [], VAT_RATE, q.discount || 0).grandTotal, 0),
       quotationsCount: quotations.length,
-      totalInvoicesValue: invoices.reduce((sum, inv) => sum + inv.grandTotal, 0),
+      totalInvoicesValue: invoices.reduce((sum, inv) => sum + calculateTotals(inv.items || [], VAT_RATE, inv.discount || 0).grandTotal, 0),
       invoicesCount: invoices.length,
       openQuotations: quotations.filter(q => q.status === 'Sent').length,
       unpaidInvoices: invoices.filter(inv => inv.status === 'Sent' || inv.status === 'Partly Paid').length,
@@ -212,7 +213,12 @@ const RecentDataTable = React.memo(({ type, data }: { type: 'quotation' | 'invoi
               </Link>
             </TableCell>
             <TableCell>{item.clientName}</TableCell>
-            <TableCell className="text-right">{formatCurrency(item.grandTotal, item.currency)}</TableCell>
+            <TableCell className="text-right">
+              {formatCurrency(
+                calculateTotals(item.items || [], VAT_RATE, (item as any).discount || 0).grandTotal,
+                item.currency
+              )}
+            </TableCell>
             <TableCell>
               <Badge variant={
                 type === 'quotation' ?

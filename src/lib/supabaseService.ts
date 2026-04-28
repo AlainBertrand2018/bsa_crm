@@ -14,6 +14,8 @@ import {
     deleteDocument
 } from './firestore';
 import { Quotation, Invoice, ClientDetails, BusinessDetails, OnboardingProduct } from './types';
+import { calculateTotals } from './utils';
+import { VAT_RATE } from './constants';
 
 /**
  * SHIM SERVICE
@@ -300,6 +302,7 @@ export const supabaseService = {
         _autoGenerateInvoice: async (quotationId: string, q: any) => {
             try {
                 // 1. Check if invoice already exists for this quotation
+                if (!quotationId) return;
                 const existing = await getDocuments("invoices", [
                     where("quotationId", "==", quotationId)
                 ]);
@@ -323,15 +326,8 @@ export const supabaseService = {
 
                 // 3. Recalculate totals to be 100% sure
                 const items = q.items || [];
-                const recalculatedSubTotal = items.reduce((sum: number, item: any) => {
-                    const qty = Number(item.quantity) || 0;
-                    const price = Number(item.unitPrice) || 0;
-                    return sum + (qty * price);
-                }, 0);
+                const { subTotal: recalculatedSubTotal, vatAmount, grandTotal } = calculateTotals(items, VAT_RATE, q.discount || 0);
                 const discount = q.discount || 0;
-                const amountBeforeVat = Math.max(0, recalculatedSubTotal - discount);
-                const vatAmount = amountBeforeVat * 0.15; // Using VAT_RATE constant from lib if available, or 15%
-                const grandTotal = amountBeforeVat + vatAmount;
 
                 const invoiceData = {
                     clientId: q.clientId || q.client_id || '',

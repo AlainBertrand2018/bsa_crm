@@ -5,13 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usersService } from '@/lib/firestore';
-import { auth } from '@/lib/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { secondaryAuth } from '@/lib/firebase-admin';
 
 export default function SetupUsersPage() {
     const { currentUser, isLoading } = useAuth();
@@ -35,9 +35,10 @@ export default function SetupUsersPage() {
     }
 
     const checkFirestoreUsers = async () => {
+        if (!currentUser) return;
         setLoading(true);
         try {
-            const users = await usersService.getAll();
+            const users = await usersService.getAll(currentUser.id, currentUser.role, currentUser.companyId);
             setFirestoreUsers(users as any[]);
             setResult(`Found ${users.length} users in Firestore`);
         } catch (error: any) {
@@ -49,32 +50,52 @@ export default function SetupUsersPage() {
     const createAuthUser = async (email: string, password: string, userData: any) => {
         setLoading(true);
         try {
-            // Create in Firebase Auth
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const uid = userCredential.user.uid;
-
             // Determine onboardingCompleted based on role
             const onboardingCompleted = userData.role === 'Super Admin' || userData.role === 'Admin';
+            
+            let uid;
+            try {
+                // Try to create in Firebase Auth using SECONDARY instance
+                const { createUserWithEmailAndPassword } = await import('firebase/auth');
+                const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                uid = userCredential.user.uid;
+                await signOut(secondaryAuth);
+                setResult(prev => prev + `\n✓ Created Auth user: ${email}`);
+            } catch (authError: any) {
+                if (authError.code === 'auth/email-already-in-use') {
+                    // Try to get existing user UID
+                    const userCredential = await signInWithEmailAndPassword(secondaryAuth, email, password);
+                    uid = userCredential.user.uid;
+                    await signOut(secondaryAuth);
+                    setResult(prev => prev + `\n⚠ User exists in Auth: ${email}`);
+                } else {
+                    throw authError;
+                }
+            }
 
-            // Create in Firestore with the same UID
+            // Create/Update in Firestore with the same UID
             await setDoc(doc(db, 'users', uid), {
                 email: userData.email,
                 name: userData.name,
                 role: userData.role,
                 onboardingCompleted: onboardingCompleted,
-            });
+                onboarding: onboardingCompleted ? 'True' : 'False',
+                updatedAt: serverTimestamp(),
+            }, { merge: true });
 
-            setResult(`Successfully created user: ${email} (UID: ${uid}, Role: ${userData.role}, Onboarding: ${onboardingCompleted ? 'Completed' : 'Required'})`);
+            setResult(prev => prev + `\n✓ Updated Firestore: ${email} (UID: ${uid})`);
         } catch (error: any) {
-            setResult(`Error creating user: ${error.message}`);
+            setResult(prev => prev + `\n✗ Error with ${email}: ${error.message}`);
+            console.error(`Error with ${email}:`, error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const setupDefaultUsers = async () => {
         setLoading(true);
         const defaultUsers = [
-            { email: "alain.bertrand.mu@gmail.com", password: "Ab@280765", name: "Alain BERTRAND", role: "Super Admin" },
+            { email: "alain.bertrand.mu@gmail.com", password: "ab@280765", name: "Alain BERTRAND", role: "Super Admin" },
             { email: "wesley@fids-maurice.online", password: "Wr@280765", name: "Wesley ROSE", role: "User" },
             { email: "stephan@fids-maurice.online", password: "St@280765", name: "Stephan TOURMENTIN", role: "User" },
             { email: "catheleen@fids-maurice.online", password: "Cm@280765", name: "Catheleen MARIMOOTOO", role: "User" },

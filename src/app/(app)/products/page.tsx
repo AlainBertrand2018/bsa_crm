@@ -8,7 +8,7 @@ import { Product } from '@/lib/types';
 import { FullPageLoading } from '@/components/shared/LoadingSpinner';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Plus, Package, Tag, Loader2, Trash2 } from 'lucide-react';
+import { Plus, Package, Tag, Loader2, Trash2, Edit2, Eye } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -71,7 +71,10 @@ export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isViewOpen, setIsViewOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [isEditMode, setIsEditMode] = useState(false);
 
     const form = useForm<ProductFormValues>({
         resolver: zodResolver(productSchema),
@@ -138,29 +141,69 @@ export default function ProductsPage() {
         }
     };
 
+    const handleEdit = (product: Product) => {
+        setSelectedProduct(product);
+        setIsEditMode(true);
+        form.reset({
+            name: product.name,
+            type: product.type as any,
+            description: product.description || "",
+            unitPrice: product.unitPrice,
+            bulkPrice: product.bulkPrice,
+            minOrder: product.minOrder,
+            inventory: product.inventory,
+        });
+        setIsDialogOpen(true);
+    };
+
+    const handleView = (product: Product) => {
+        setSelectedProduct(product);
+        setIsViewOpen(true);
+    };
+
     const onSubmit = async (values: ProductFormValues) => {
         if (!currentUser) return;
         setIsSubmitting(true);
         try {
-            await supabaseService.products.create({
-                name: values.name,
-                type: values.type,
-                description: values.description,
-                unitPrice: values.unitPrice,
-                bulkPrice: values.bulkPrice,
-                minOrder: values.minOrder,
-                inventory: values.inventory,
-                userId: currentUser.id,
-                companyId: currentUser.companyId,
-                rrp: values.unitPrice * 1.2, // Default RRP
-            });
+            if (isEditMode && selectedProduct) {
+                await supabaseService.products.update(selectedProduct.id, {
+                    name: values.name,
+                    type: values.type,
+                    description: values.description,
+                    unitPrice: values.unitPrice,
+                    bulkPrice: values.bulkPrice,
+                    minOrder: values.minOrder,
+                    inventory: values.inventory,
+                    rrp: values.unitPrice * 1.2,
+                });
 
-            toast({
-                title: "Product Created",
-                description: `${values.name} has been added to your inventory.`,
-            });
+                toast({
+                    title: "Product Updated",
+                    description: `${values.name} has been successfully updated.`,
+                });
+            } else {
+                await supabaseService.products.create({
+                    name: values.name,
+                    type: values.type,
+                    description: values.description,
+                    unitPrice: values.unitPrice,
+                    bulkPrice: values.bulkPrice,
+                    minOrder: values.minOrder,
+                    inventory: values.inventory,
+                    userId: currentUser.id,
+                    companyId: currentUser.companyId,
+                    rrp: values.unitPrice * 1.2, // Default RRP
+                });
+
+                toast({
+                    title: "Product Created",
+                    description: `${values.name} has been added to your inventory.`,
+                });
+            }
 
             setIsDialogOpen(false);
+            setIsEditMode(false);
+            setSelectedProduct(null);
             form.reset();
             fetchProducts();
         } catch (error) {
@@ -183,7 +226,22 @@ export default function ProductsPage() {
                 title="Products"
                 description="Manage your products and inventory."
                 actions={
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                        setIsDialogOpen(open);
+                        if (!open) {
+                            setIsEditMode(false);
+                            setSelectedProduct(null);
+                            form.reset({
+                                name: "",
+                                type: "Physical",
+                                description: "",
+                                unitPrice: 0,
+                                bulkPrice: 0,
+                                minOrder: 1,
+                                inventory: 0,
+                            });
+                        }
+                    }}>
                         <DialogTrigger asChild>
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" /> New Product
@@ -191,9 +249,9 @@ export default function ProductsPage() {
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[525px]">
                             <DialogHeader>
-                                <DialogTitle>Add New Product</DialogTitle>
+                                <DialogTitle>{isEditMode ? "Edit Product" : "Add New Product"}</DialogTitle>
                                 <DialogDescription>
-                                    Create a new product or service for your business.
+                                    {isEditMode ? "Update the details of your product or service." : "Create a new product or service for your business."}
                                 </DialogDescription>
                             </DialogHeader>
                             <Form {...form}>
@@ -330,7 +388,7 @@ export default function ProductsPage() {
                                     <DialogFooter>
                                         <Button type="submit" disabled={isSubmitting}>
                                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Create Product
+                                            {isEditMode ? "Update Product" : "Create Product"}
                                         </Button>
                                     </DialogFooter>
                                 </form>
@@ -394,31 +452,39 @@ export default function ProductsPage() {
                                         <TableCell className="text-right">{product.minOrder}</TableCell>
                                         {currentUser?.role !== 'User' && (
                                             <TableCell className="text-right">
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                This action cannot be undone. This will permanently delete the product
-                                                                "{product.name}" from the database.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction
-                                                                onClick={() => handleDelete(product.id)}
-                                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                                            >
-                                                                Delete
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleView(product)}>
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(product)}>
+                                                        <Edit2 className="h-4 w-4" />
+                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    This action cannot be undone. This will permanently delete the product
+                                                                    "{product.name}" from the database.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    onClick={() => handleDelete(product.id)}
+                                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                                >
+                                                                    Delete
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
                                             </TableCell>
                                         )}
                                     </TableRow>
@@ -428,6 +494,64 @@ export default function ProductsPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Product Details</DialogTitle>
+                        <DialogDescription>
+                            Detailed information for {selectedProduct?.name}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedProduct && (
+                        <div className="space-y-6 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <h4 className="text-sm font-medium text-muted-foreground">Type</h4>
+                                    <Badge variant="outline" className="mt-1">{selectedProduct.type}</Badge>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-medium text-muted-foreground">Inventory</h4>
+                                    <p className="text-sm mt-1">
+                                        {selectedProduct.type?.toLowerCase() === 'physical' 
+                                            ? `${selectedProduct.inventory} units` 
+                                            : 'Unlimited'}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 className="text-sm font-medium text-muted-foreground">Description</h4>
+                                <p className="text-sm mt-1 bg-muted/50 p-3 rounded-md italic">
+                                    {selectedProduct.description || "No description provided."}
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4 border-t pt-4">
+                                <div>
+                                    <h4 className="text-sm font-medium text-muted-foreground">Unit Price</h4>
+                                    <p className="text-lg font-semibold text-primary">{formatCurrency(selectedProduct.unitPrice)}</p>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-medium text-muted-foreground">Bulk Price</h4>
+                                    <p className="text-lg font-semibold">{formatCurrency(selectedProduct.bulkPrice)}</p>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-medium text-muted-foreground">Min Order</h4>
+                                    <p className="text-lg font-semibold">{selectedProduct.minOrder}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsViewOpen(false)}>Close</Button>
+                        <Button onClick={() => {
+                            setIsViewOpen(false);
+                            handleEdit(selectedProduct!);
+                        }}>Edit Product</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

@@ -78,7 +78,7 @@ export const quotationsService = {
             // No constraints for Super Admin
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else {
+        } else if (userId) {
             // Regular User or Admin without companyId sees only their own
             constraints.push(firestore.where("createdBy", "==", userId));
         }
@@ -87,7 +87,15 @@ export const quotationsService = {
     getById: (id: string) => getDocument("quotations", id),
     create: (data: Omit<Quotation, "id">) => addDocument("quotations", data),
     update: (id: string, data: Partial<Quotation>) => updateDocument("quotations", id, data),
-    delete: (id: string) => deleteDocument("quotations", id),
+    delete: async (id: string) => {
+        // 1. Delete associated invoices (which will delete their receipts)
+        const invoices = await getDocuments("invoices", [firestore.where("quotationId", "==", id)]);
+        for (const inv of invoices) {
+            await invoicesService.delete(inv.id);
+        }
+        // 2. Delete the quotation
+        return await deleteDocument("quotations", id);
+    },
 };
 
 export const invoicesService = {
@@ -97,7 +105,7 @@ export const invoicesService = {
             // No constraints
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else {
+        } else if (userId) {
             constraints.push(firestore.where("createdBy", "==", userId));
         }
         return getDocuments("invoices", constraints);
@@ -105,7 +113,15 @@ export const invoicesService = {
     getById: (id: string) => getDocument("invoices", id),
     create: (data: Omit<Invoice, "id">) => addDocument("invoices", data),
     update: (id: string, data: Partial<Invoice>) => updateDocument("invoices", id, data),
-    delete: (id: string) => deleteDocument("invoices", id),
+    delete: async (id: string) => {
+        // 1. Delete associated receipts
+        const receipts = await getDocuments("receipts", [firestore.where("invoiceId", "==", id)]);
+        for (const r of receipts) {
+            await deleteDocument("receipts", r.id);
+        }
+        // 2. Delete the invoice
+        return await deleteDocument("invoices", id);
+    },
 };
 
 export const clientsService = {
@@ -115,7 +131,7 @@ export const clientsService = {
             // No constraints
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else {
+        } else if (userId) {
             constraints.push(firestore.where("createdBy", "==", userId));
         }
         return getDocuments("clients", constraints);
@@ -123,7 +139,34 @@ export const clientsService = {
     getById: (id: string) => getDocument("clients", id),
     create: (data: ClientDetails) => addDocument("clients", data),
     update: (id: string, data: Partial<ClientDetails>) => updateDocument("clients", id, data),
-    delete: (id: string) => deleteDocument("clients", id),
+    delete: async (id: string) => {
+        // 1. Delete associated quotations (which will delete invoices and receipts)
+        const quotations = await getDocuments("quotations", [firestore.where("clientId", "==", id)]);
+        for (const q of quotations) {
+            await quotationsService.delete(q.id);
+        }
+
+        // 2. Delete associated invoices that might not be linked to quotations
+        const invoices = await getDocuments("invoices", [firestore.where("clientId", "==", id)]);
+        for (const inv of invoices) {
+            await invoicesService.delete(inv.id);
+        }
+
+        // 3. Delete associated receipts (just in case any are orphan or directly linked)
+        const receipts = await getDocuments("receipts", [firestore.where("clientId", "==", id)]);
+        for (const r of receipts) {
+            await deleteDocument("receipts", r.id);
+        }
+
+        // 4. Delete associated statements
+        const statements = await getDocuments("statements", [firestore.where("clientId", "==", id)]);
+        for (const s of statements) {
+            await deleteDocument("statements", s.id);
+        }
+
+        // 5. Delete the client
+        return await deleteDocument("clients", id);
+    },
 };
 
 export const onboardingService = {
@@ -163,7 +206,7 @@ export const usersService = {
             // Sees all
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else {
+        } else if (userId) {
             // Regular users see only themselves
             constraints.push(firestore.where("id", "==", userId));
         }
@@ -172,7 +215,10 @@ export const usersService = {
     getById: (id: string) => getDocument("users", id),
     getBusinessDetails: (userId: string) => getDocument("businesses", userId),
     getAllBusinesses: () => getDocuments("businesses"),
-    getProducts: (userId: string) => getDocuments("user_products", [firestore.where("userId", "==", userId)]),
+    getProducts: (userId: string) => {
+        if (!userId) return Promise.resolve([]);
+        return getDocuments("user_products", [firestore.where("userId", "==", userId)]);
+    },
     update: (id: string, data: Partial<User>) => updateDocument("users", id, data),
     updateBusinessDetails: (userId: string, data: BusinessDetails) => setDocument("businesses", userId, data, { merge: true }),
     delete: (id: string) => deleteDocument("users", id),
@@ -186,9 +232,7 @@ export const productsService = {
             // No constraints
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else {
-            // Regular user sees their own or their team's if companyId is present
-            // But per requirement 3: "Users can see whatever they create"
+        } else if (userId) {
             constraints.push(firestore.where("userId", "==", userId));
         }
 
@@ -206,7 +250,7 @@ export const receiptsService = {
             // No constraints
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else {
+        } else if (userId) {
             constraints.push(firestore.where("createdBy", "==", userId));
         }
         return getDocuments("receipts", constraints);
@@ -223,7 +267,7 @@ export const statementsService = {
             // No constraints
         } else if (role === 'Admin' && companyId) {
             constraints.push(firestore.where("companyId", "==", companyId));
-        } else {
+        } else if (userId) {
             constraints.push(firestore.where("createdBy", "==", userId));
         }
         return getDocuments("statements", constraints);

@@ -8,7 +8,10 @@ This manual provides instructions for testing the core functionality of the BSA 
 *   **Credential Handling**:
     *   Navigate to `/login`.
     *   **CRITICAL**: Completely clear the email and password fields before typing credentials.
-    *   Use the provided admin credentials (e.g., `alain.bertrand.mu@gmail.com`).
+    *   Admin: `alain.bertrand.mu@gmail.com` / `ab@280765`
+*   **Emergency Recovery**:
+    *   If you are locked out or see "Permission Denied", navigate to `/recovery`.
+    *   Use Master Key: `BSA-RECOVERY-2026`.
 
 ### 2. Core Workflow Testing
 

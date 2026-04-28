@@ -11,6 +11,8 @@ import { supabaseService } from '@/lib/supabaseService';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { calculateTotals } from '@/lib/utils';
+import { VAT_RATE } from '@/lib/constants';
 
 export default function QuotationsListPage() {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
@@ -29,18 +31,21 @@ export default function QuotationsListPage() {
       console.log("Fetched quotations:", data);
 
       // Transform data to match local types (handling snake_case if necessary)
-      const transformedData = data.map((q: any) => ({
-        ...q,
-        clientName: q.clients?.client_name || q.clientName,
-        clientEmail: q.clients?.client_email || q.clientEmail,
-        clientCompany: q.clients?.client_company || q.clientCompany,
-        expiryDate: q.expiry_date || q.expiryDate,
-        quotationDate: q.quotation_date || q.quotationDate,
-        subTotal: q.sub_total || q.subTotal,
-        vatAmount: q.vat_amount || q.vatAmount,
-        grandTotal: q.grand_total || q.grandTotal,
-        createdBy: q.user_id || q.createdBy
-      }));
+      const transformedData = data.map((q: any) => {
+        const { subTotal, vatAmount, grandTotal } = calculateTotals(q.items || [], VAT_RATE, q.discount || 0);
+        return {
+          ...q,
+          clientName: q.clients?.client_name || q.clientName,
+          clientEmail: q.clients?.client_email || q.clientEmail,
+          clientCompany: q.clients?.client_company || q.clientCompany,
+          expiryDate: q.expiry_date || q.expiryDate,
+          quotationDate: q.quotation_date || q.quotationDate,
+          subTotal,
+          vatAmount,
+          grandTotal,
+          createdBy: q.user_id || q.createdBy
+        };
+      });
 
       setQuotations(transformedData as Quotation[]);
     } catch (error) {

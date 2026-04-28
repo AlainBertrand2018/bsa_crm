@@ -89,12 +89,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
         };
 
+        // Safety timeout for Firestore hang
+        const timeoutId = setTimeout(() => {
+          if (isLoading) {
+            console.warn("[Auth] Firestore hang detected. Forcing state update.");
+            updateState();
+          }
+        }, 10000); // 10 seconds
+
         const unsubscribeDoc = onSnapshot(userDocRef, (docSnap) => {
           userData = docSnap.exists() ? docSnap.data() as any : {};
           console.log('[Auth Debug] Received User Doc:', userData);
+          clearTimeout(timeoutId);
           updateState();
         }, (error) => {
           console.error("[Auth] Firestore listener error:", error);
+          clearTimeout(timeoutId);
           setIsLoading(false);
         });
 
@@ -106,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         return () => {
+          clearTimeout(timeoutId);
           unsubscribeDoc();
           unsubscribeBusiness();
         };

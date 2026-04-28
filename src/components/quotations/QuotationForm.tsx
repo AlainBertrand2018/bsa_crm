@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { VAT_RATE, QUOTATION_STATUSES } from '@/lib/constants';
 import type { DocumentItem, Quotation, Product, ClientDetails } from '@/lib/types';
-import { formatCurrency, formatDate, generateQuotationId } from '@/lib/utils';
+import { formatCurrency, formatDate, generateQuotationId, calculateTotals } from '@/lib/utils';
 import { PlusCircle, Trash2, Save, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -144,24 +144,15 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
   const watchedItems = form.watch("items");
   const watchedDiscount = form.watch("discount");
 
-  const calculateTotals = useCallback(() => {
-    const subTotal = (watchedItems || []).reduce((sum, item) => {
-      const quantity = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unitPrice) || 0;
-      return sum + (quantity * unitPrice);
-    }, 0);
-    const discountAmount = Number(watchedDiscount) || 0;
-    const amountBeforeVat = Math.max(0, subTotal - discountAmount);
-    const vatAmount = amountBeforeVat * VAT_RATE;
-    const grandTotal = amountBeforeVat + vatAmount;
-    return { subTotal, discountAmount, vatAmount, grandTotal };
+  const memoizedCalculateTotals = useCallback(() => {
+    return calculateTotals(watchedItems || [], VAT_RATE, watchedDiscount || 0);
   }, [watchedItems, watchedDiscount]);
 
-  const [totals, setTotals] = useState(calculateTotals());
+  const [totals, setTotals] = useState(memoizedCalculateTotals());
 
   useEffect(() => {
-    setTotals(calculateTotals());
-  }, [watchedItems, watchedDiscount, calculateTotals]);
+    setTotals(memoizedCalculateTotals());
+  }, [watchedItems, watchedDiscount, memoizedCalculateTotals]);
 
   const handleProductTypeChange = (index: number, productTypeId: string) => {
     const selectedProduct = products.find(p => p.id === productTypeId);
@@ -209,7 +200,7 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
 
   async function onSubmit(data: QuotationFormValues) {
     setIsLoading(true);
-    const { subTotal, discountAmount, vatAmount, grandTotal } = calculateTotals();
+    const { subTotal, discountAmount, vatAmount, grandTotal } = memoizedCalculateTotals();
 
     const quotationData: Quotation = {
       id: initialData?.id || generateQuotationId(data.clientName),
@@ -564,7 +555,7 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
               )}
               <div className="flex justify-between">
                 <span>Amount before VAT:</span>
-                <span>{formatCurrency(Math.max(0, totals.subTotal - (totals.discountAmount || 0)), form.getValues('currency'))}</span>
+                <span>{formatCurrency(totals.amountBeforeVat, form.getValues('currency'))}</span>
               </div>
               <div className="flex justify-between"><span>VAT ({VAT_RATE * 100}%):</span> <span>{formatCurrency(totals.vatAmount, form.getValues('currency'))}</span></div>
               <div className="flex justify-between font-bold text-lg text-primary border-t pt-2 mt-2"><span>Grand Total:</span> <span>{formatCurrency(totals.grandTotal, form.getValues('currency'))}</span></div>

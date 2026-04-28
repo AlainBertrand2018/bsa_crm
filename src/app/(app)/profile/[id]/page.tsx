@@ -190,7 +190,7 @@ export default function UserProfilePage() {
 
                 {/* Business and Products Info */}
                 <div className="lg:col-span-2 space-y-8">
-                    {business ? (
+                    {(business || isEditing) ? (
                         <Card className="shadow-lg">
                             <CardHeader className="bg-muted/30">
                                 <CardTitle className="flex items-center justify-between gap-2">
@@ -198,7 +198,7 @@ export default function UserProfilePage() {
                                         <Building2 className="h-6 w-6 text-primary" />
                                         Business Information
                                     </div>
-                                    {(currentUser?.role === 'Super Admin' || currentUser?.id === id) && !isEditing && (
+                                    {(currentUser?.role === 'Super Admin' || currentUser?.id === id) && !isEditing && business && (
                                         <Button variant="outline" size="sm" onClick={() => {
                                             setEditData(business || {
                                                 businessName: '',
@@ -277,7 +277,7 @@ export default function UserProfilePage() {
                                             </Button>
                                         </div>
                                     </div>
-                                ) : (
+                                ) : business ? (
                                     <div className="grid md:grid-cols-2 gap-y-8 gap-x-12">
                                         <div className="space-y-1">
                                             <p className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Business Name</p>
@@ -320,7 +320,7 @@ export default function UserProfilePage() {
                                             <p className="text-base font-medium">{business.vatNo || 'N/A'}</p>
                                         </div>
                                     </div>
-                                )}
+                                ) : null}
                             </CardContent>
                         </Card>
                     ) : (
@@ -329,7 +329,17 @@ export default function UserProfilePage() {
                             <h3 className="text-xl font-bold mb-2">No Business Profile</h3>
                             <p className="text-muted-foreground mb-6 max-w-sm mx-auto">This account hasn't established a business profile yet. Document headers will use default system values.</p>
                             {(currentUser?.role === 'Super Admin' || currentUser?.id === id) && (
-                                <Button onClick={() => setIsEditing(true)}>
+                                <Button onClick={() => {
+                                    setEditData({
+                                        businessName: '',
+                                        businessAddress: '',
+                                        brn: '',
+                                        telephone: '',
+                                        position: '',
+                                        email: user.email || ''
+                                    });
+                                    setIsEditing(true);
+                                }}>
                                     <Plus className="mr-2 h-4 w-4" /> Initialize Business Details
                                 </Button>
                             )}

@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import type { Quotation, Invoice, DocumentItem, BusinessDetails } from './types';
 import { COMPANY_DETAILS, VAT_RATE } from './constants';
-import { formatCurrency, formatDate, isValidBRN } from './utils';
+import { formatCurrency, formatDate, isValidBRN, calculateTotals } from './utils';
 
 // Extend jsPDF with autoTable, otherwise TypeScript might complain
 declare module 'jspdf' {
@@ -139,13 +139,22 @@ const addItemsTable = (doc: jsPDF, yPos: number, items: DocumentItem[], currency
   const tableRows: any[][] = [];
 
   items.forEach(item => {
-    const qty = Number(item.quantity) || 0;
-    const price = Number(item.unitPrice) || 0;
-    const itemTotal = qty * price;
+    // Use the same robust logic as calculateTotals for table rows
+    // Use casting to any to handle property variations safely
+    const itemAny = item as any;
+    const qty = Number(itemAny.quantity ?? itemAny.qty ?? 0);
+    const price = Number(itemAny.unitPrice ?? itemAny.unit_price ?? itemAny.price ?? itemAny.rate ?? 0);
+    let itemTotal = qty * price;
+    
+    // Fallback to item.total if the above calculation resulted in 0 but a total exists
+    if (itemTotal === 0 && itemAny.total) {
+      itemTotal = Number(itemAny.total) || 0;
+    }
+    
     const itemData = [
       item.description || "Unknown Item",
-      item.quantity,
-      formatCurrency(item.unitPrice, currency),
+      qty.toString(),
+      formatCurrency(price, currency),
       formatCurrency(itemTotal, currency),
     ];
     tableRows.push(itemData);
@@ -271,24 +280,15 @@ export const generatePdfDocument = (
   businessDetails?: BusinessDetails
 ): void => {
   // ENSURE MATHEMATICAL ACCURACY BEFORE GENERATING PDF
-  const items = document.items || [];
-  const subTotal = items.reduce((sum, item) => {
-    const qty = Number(item.quantity) || 0;
-    const price = Number(item.unitPrice) || 0;
-    return sum + (qty * price);
-  }, 0);
+  const { subTotal, vatAmount, grandTotal, discountAmount } = calculateTotals(document.items || [], VAT_RATE, document.discount || 0);
   
-  const discount = document.discount || 0;
-  const amountBeforeVat = Math.max(0, subTotal - discount);
-  const vatAmount = amountBeforeVat * VAT_RATE;
-  const grandTotal = amountBeforeVat + vatAmount;
-
   // Create a verified document object for rendering
   const verifiedDocument = {
     ...document,
     subTotal,
     vatAmount,
-    grandTotal
+    grandTotal,
+    discount: discountAmount
   };
 
   const doc = new jsPDF();

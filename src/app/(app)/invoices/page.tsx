@@ -7,6 +7,8 @@ import { InvoiceStatus } from '@/lib/constants';
 import { supabaseService } from '@/lib/supabaseService';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { calculateTotals } from '@/lib/utils';
+import { VAT_RATE } from '@/lib/constants';
 
 export default function InvoicesListPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -21,19 +23,22 @@ export default function InvoicesListPage() {
     try {
       const data = await supabaseService.invoices.getAll(currentUser.id, currentUser.role, currentUser.companyId);
 
-      const transformedData = data.map((inv: any) => ({
-        ...inv,
-        clientName: inv.clients?.client_name || inv.clientName,
-        clientEmail: inv.clients?.client_email || inv.clientEmail,
-        clientCompany: inv.clients?.client_company || inv.clientCompany,
-        invoiceDate: inv.invoice_date || inv.invoiceDate,
-        dueDate: inv.due_date || inv.dueDate,
-        subTotal: inv.sub_total || inv.subTotal,
-        vatAmount: inv.vat_amount || inv.vatAmount,
-        grandTotal: inv.grand_total || inv.grandTotal,
-        totalPaid: inv.total_paid || inv.totalPaid,
-        createdBy: inv.user_id || inv.createdBy
-      }));
+      const transformedData = data.map((inv: any) => {
+        const { subTotal, vatAmount, grandTotal } = calculateTotals(inv.items || [], VAT_RATE, inv.discount || 0);
+        return {
+          ...inv,
+          clientName: inv.clients?.client_name || inv.clientName,
+          clientEmail: inv.clients?.client_email || inv.clientEmail,
+          clientCompany: inv.clients?.client_company || inv.clientCompany,
+          invoiceDate: inv.invoice_date || inv.invoiceDate,
+          dueDate: inv.due_date || inv.dueDate,
+          subTotal,
+          vatAmount,
+          grandTotal,
+          totalPaid: inv.total_paid || inv.totalPaid,
+          createdBy: inv.user_id || inv.createdBy
+        };
+      });
 
       setInvoices(transformedData as Invoice[]);
     } catch (error) {
