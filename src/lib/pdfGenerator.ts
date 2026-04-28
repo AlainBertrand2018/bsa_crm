@@ -139,11 +139,14 @@ const addItemsTable = (doc: jsPDF, yPos: number, items: DocumentItem[], currency
   const tableRows: any[][] = [];
 
   items.forEach(item => {
+    const qty = Number(item.quantity) || 0;
+    const price = Number(item.unitPrice) || 0;
+    const itemTotal = qty * price;
     const itemData = [
       item.description || "Unknown Item",
       item.quantity,
       formatCurrency(item.unitPrice, currency),
-      formatCurrency(item.total, currency),
+      formatCurrency(itemTotal, currency),
     ];
     tableRows.push(itemData);
   });
@@ -267,13 +270,34 @@ export const generatePdfDocument = (
   type: 'Quotation' | 'Invoice',
   businessDetails?: BusinessDetails
 ): void => {
+  // ENSURE MATHEMATICAL ACCURACY BEFORE GENERATING PDF
+  const items = document.items || [];
+  const subTotal = items.reduce((sum, item) => {
+    const qty = Number(item.quantity) || 0;
+    const price = Number(item.unitPrice) || 0;
+    return sum + (qty * price);
+  }, 0);
+  
+  const discount = document.discount || 0;
+  const amountBeforeVat = Math.max(0, subTotal - discount);
+  const vatAmount = amountBeforeVat * VAT_RATE;
+  const grandTotal = amountBeforeVat + vatAmount;
+
+  // Create a verified document object for rendering
+  const verifiedDocument = {
+    ...document,
+    subTotal,
+    vatAmount,
+    grandTotal
+  };
+
   const doc = new jsPDF();
 
-  let yPos = addDocumentHeader(doc, type, document, businessDetails);
-  yPos = addClientDetails(doc, yPos, document);
-  yPos = addItemsTable(doc, yPos, document.items, document.currency);
-  yPos = addTotals(doc, yPos, document);
-  addNotesAndFooter(doc, yPos, document, type);
+  let yPos = addDocumentHeader(doc, type, verifiedDocument, businessDetails);
+  yPos = addClientDetails(doc, yPos, verifiedDocument as any);
+  yPos = addItemsTable(doc, yPos, verifiedDocument.items, verifiedDocument.currency);
+  yPos = addTotals(doc, yPos, verifiedDocument as any);
+  addNotesAndFooter(doc, yPos, verifiedDocument as any, type);
 
   doc.save(`${type}_${document.id.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
 };

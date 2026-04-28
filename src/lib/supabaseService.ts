@@ -321,6 +321,18 @@ export const supabaseService = {
                 const clientAddress = !isNaoNA(q.clientAddress) ? q.clientAddress : (!isNaoNA(q.client_address) ? q.client_address : (q.clients?.client_address || ''));
                 const clientBRN = !isNaoNA(q.clientBRN) ? q.clientBRN : (!isNaoNA(q.client_brn) ? q.client_brn : (q.clients?.client_brn || ''));
 
+                // 3. Recalculate totals to be 100% sure
+                const items = q.items || [];
+                const recalculatedSubTotal = items.reduce((sum: number, item: any) => {
+                    const qty = Number(item.quantity) || 0;
+                    const price = Number(item.unitPrice) || 0;
+                    return sum + (qty * price);
+                }, 0);
+                const discount = q.discount || 0;
+                const amountBeforeVat = Math.max(0, recalculatedSubTotal - discount);
+                const vatAmount = amountBeforeVat * 0.15; // Using VAT_RATE constant from lib if available, or 15%
+                const grandTotal = amountBeforeVat + vatAmount;
+
                 const invoiceData = {
                     clientId: q.clientId || q.client_id || '',
                     quotationId: q.id || quotationId,
@@ -330,11 +342,14 @@ export const supabaseService = {
                     clientPhone,
                     clientAddress,
                     clientBRN,
-                    items: q.items || [],
-                    subTotal: q.subTotal || q.sub_total || 0,
-                    discount: q.discount || 0,
-                    vatAmount: q.vatAmount || q.vat_amount || 0,
-                    grandTotal: q.grandTotal || q.grand_total || 0,
+                    items: items.map((item: any) => ({
+                        ...item,
+                        total: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+                    })),
+                    subTotal: recalculatedSubTotal,
+                    discount,
+                    vatAmount,
+                    grandTotal,
                     currency: q.currency || 'MUR',
                     notes: `Generated from Quotation ${q.id || quotationId}`,
                     status: 'To Send',

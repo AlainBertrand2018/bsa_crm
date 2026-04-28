@@ -97,7 +97,15 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
     // window.print(); 
   }
 
-  const amountBeforeVat = Math.max(0, invoice.subTotal - (invoice.discount || 0));
+  const subTotal = (invoice.items || []).reduce((sum, item) => {
+    const qty = Number(item.quantity) || 0;
+    const price = Number(item.unitPrice) || 0;
+    return sum + (qty * price);
+  }, 0);
+
+  const amountBeforeVat = Math.max(0, subTotal - (invoice.discount || 0));
+  const vatAmount = amountBeforeVat * VAT_RATE;
+  const grandTotal = amountBeforeVat + vatAmount;
 
   return (
     <Card className="shadow-xl w-full max-w-4xl mx-auto">
@@ -156,7 +164,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
           <div className="w-full max-w-xs space-y-2">
             <div className="grid grid-cols-2 gap-4">
               <span className="text-right text-muted-foreground">Subtotal:</span>
-              <span className="text-right font-medium">{formatCurrency(invoice.subTotal, invoice.currency)}</span>
+              <span className="text-right font-medium">{formatCurrency(subTotal, invoice.currency)}</span>
 
               {(invoice.discount || 0) > 0 && (
                 <>
@@ -169,11 +177,11 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
               <span className="text-right font-medium">{formatCurrency(amountBeforeVat, invoice.currency)}</span>
 
               <span className="text-right text-muted-foreground">VAT ({VAT_RATE * 100}%):</span>
-              <span className="text-right font-medium">{formatCurrency(invoice.vatAmount, invoice.currency)}</span>
+              <span className="text-right font-medium">{formatCurrency(vatAmount, invoice.currency)}</span>
 
               <div className="col-span-2 border-t pt-2 mt-2 border-primary grid grid-cols-2 gap-4">
                 <span className="text-right font-bold text-lg">Grand Total:</span>
-                <span className="text-right font-bold text-lg">{formatCurrency(invoice.grandTotal, invoice.currency)}</span>
+                <span className="text-right font-bold text-lg">{formatCurrency(grandTotal, invoice.currency)}</span>
               </div>
 
               <span className="text-right text-green-600 font-medium">Total Paid:</span>
@@ -181,7 +189,7 @@ export function InvoiceView({ invoice }: InvoiceViewProps) {
 
               <div className="col-span-2 border-t pt-1 grid grid-cols-2 gap-4">
                 <span className="text-right text-destructive font-bold">Balance Due:</span>
-                <span className="text-right text-destructive font-bold">{formatCurrency(Math.max(0, invoice.grandTotal - (invoice.totalPaid || 0)), invoice.currency)}</span>
+                <span className="text-right text-destructive font-bold">{formatCurrency(Math.max(0, grandTotal - (invoice.totalPaid || 0)), invoice.currency)}</span>
               </div>
             </div>
           </div>

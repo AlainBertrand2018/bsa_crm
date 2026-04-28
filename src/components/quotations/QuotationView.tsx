@@ -110,7 +110,15 @@ export function QuotationView({ quotation }: QuotationViewProps) {
     }
   };
 
-  const amountBeforeVat = Math.max(0, quotation.subTotal - (quotation.discount || 0));
+  const subTotal = (quotation.items || []).reduce((sum, item) => {
+    const qty = Number(item.quantity) || 0;
+    const price = Number(item.unitPrice) || 0;
+    return sum + (qty * price);
+  }, 0);
+
+  const amountBeforeVat = Math.max(0, subTotal - (quotation.discount || 0));
+  const vatAmount = amountBeforeVat * VAT_RATE;
+  const grandTotal = amountBeforeVat + vatAmount;
 
   return (
     <Card className="shadow-xl w-full max-w-4xl mx-auto">
@@ -173,7 +181,7 @@ export function QuotationView({ quotation }: QuotationViewProps) {
           <div className="w-full max-w-xs space-y-2">
             <div className="grid grid-cols-2 gap-4">
               <span className="text-right text-muted-foreground">Subtotal:</span>
-              <span className="text-right font-medium">{formatCurrency(quotation.subTotal, quotation.currency)}</span>
+              <span className="text-right font-medium">{formatCurrency(subTotal, quotation.currency)}</span>
 
               {(quotation.discount || 0) > 0 && (
                 <>
@@ -186,11 +194,11 @@ export function QuotationView({ quotation }: QuotationViewProps) {
               <span className="text-right font-medium">{formatCurrency(amountBeforeVat, quotation.currency)}</span>
 
               <span className="text-right text-muted-foreground">VAT ({VAT_RATE * 100}%):</span>
-              <span className="text-right font-medium">{formatCurrency(quotation.vatAmount, quotation.currency)}</span>
+              <span className="text-right font-medium">{formatCurrency(vatAmount, quotation.currency)}</span>
 
               <div className="col-span-2 border-t pt-2 mt-2 border-primary grid grid-cols-2 gap-4">
                 <span className="text-right font-bold text-lg">Grand Total:</span>
-                <span className="text-right font-bold text-lg">{formatCurrency(quotation.grandTotal, quotation.currency)}</span>
+                <span className="text-right font-bold text-lg">{formatCurrency(grandTotal, quotation.currency)}</span>
               </div>
             </div>
           </div>

@@ -145,8 +145,12 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
   const watchedDiscount = form.watch("discount");
 
   const calculateTotals = useCallback(() => {
-    const subTotal = watchedItems.reduce((sum, item) => sum + (item.total || 0), 0);
-    const discountAmount = watchedDiscount || 0;
+    const subTotal = (watchedItems || []).reduce((sum, item) => {
+      const quantity = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unitPrice) || 0;
+      return sum + (quantity * unitPrice);
+    }, 0);
+    const discountAmount = Number(watchedDiscount) || 0;
     const amountBeforeVat = Math.max(0, subTotal - discountAmount);
     const vatAmount = amountBeforeVat * VAT_RATE;
     const grandTotal = amountBeforeVat + vatAmount;
@@ -217,14 +221,18 @@ export function QuotationForm({ initialData, saveQuotation, mode }: QuotationFor
       clientPhone: data.clientPhone,
       clientAddress: data.clientAddress,
       clientBRN: data.clientBRN,
-      items: data.items.map((item): DocumentItem => ({
-        id: item.id || `item-new-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-        productTypeId: item.productTypeId,
-        description: item.description || products.find(p => p.id === item.productTypeId)?.name || '',
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: item.total,
-      })),
+      items: data.items.map((item): DocumentItem => {
+        const qty = Number(item.quantity) || 0;
+        const price = Number(item.unitPrice) || 0;
+        return {
+          id: item.id || `item-new-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+          productTypeId: item.productTypeId,
+          description: item.description || products.find(p => p.id === item.productTypeId)?.name || '',
+          quantity: qty,
+          unitPrice: price,
+          total: qty * price,
+        };
+      }),
       subTotal,
       discount: discountAmount,
       vatAmount,
