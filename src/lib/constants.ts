@@ -2,13 +2,13 @@
 import type { User } from './types';
 
 export const COMPANY_DETAILS = {
-  name: "Festival International Des Saveurs Ltd.",
-  brn: "C24215222",
-  vat: "28111871",
-  address: "23, Floor 2, Block 4, The Docks, Port Louis",
-  tel: "+230 215 3090",
-  url: "www.fids-maurice.online",
-  email: "info@fids-maurice.online",
+  name: "",
+  brn: "",
+  vat: "",
+  address: "",
+  tel: "",
+  url: "",
+  email: "",
 };
 
 
